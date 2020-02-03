@@ -1,0 +1,29 @@
+{
+  "name": "homebridge-dreambox",
+  "version": "0.1.0",
+  "description": "Control your Dreambox as HomeKit TV-Appliance",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js && echo \\\"No syntax errors! (node $(node -v))\\\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mdaskalov/homebridge-dreambox.git"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homekit",
+    "dreambox",
+    "enigma2"
+  ],
+  "author": "Milko Daskalov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mdaskalov/homebridge-dreambox/issues"
+  },
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
+  "homepage": "https://github.com/mdaskalov/homebridge-dreambox#readme"
+}
