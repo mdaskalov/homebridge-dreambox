@@ -186,14 +186,17 @@ DreamboxPlatform.prototype.addAccessory = function(accessoryName) {
     platform.log(newAccessory.displayName, "Identify!!!");
     callback();
   });
+
+  //newAccessory.category = Accessory.Categories.TELEVISION;
+
   // Plugin can save context on accessory to help restore accessory in configureAccessory()
   // newAccessory.context.something = "Something"
 
   // Make sure you provided a name for service, otherwise it may not visible in some HomeKit apps
-  newAccessory.addService(Service.Lightbulb, "Test Light")
+  newAccessory.addService(Service.Television, "tvService Dreambox")
   .getCharacteristic(Characteristic.On)
   .on('set', function(value, callback) {
-    platform.log(newAccessory.displayName, "Light -> " + value);
+    platform.log(newAccessory.displayName, "Dreambox -> " + value);
     callback();
   });
 
