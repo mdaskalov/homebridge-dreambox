@@ -1,0 +1,53 @@
+{
+  "pluginAlias": "Dreambox",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "More info about this plugin at [GitHub](https://github.com/mdaskalov/)",
+  "footerDisplay": "Made with ❤️ by Millko Daskalov",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "hostname": {
+        "title": "Hostname of your dreambox",
+        "type": "string",
+        "required": true
+      },
+      "userid": {
+        "title": "UserID for the web interface",
+        "type": "string",
+        "required": true
+      },
+      "passwd": {
+        "title": "Password for the web interface",
+        "type": "string",
+        "required": true
+      },
+      "advanced": {
+        "title": "Use advanced setting",
+        "type": "boolean"
+      }
+    }
+  },
+  "layout": [{
+      "type": "div",
+      "items": ["hostname"]
+    },
+    {
+      "type": "flex",
+      "flex-flow": "row wrap",
+      "items": ["userid", "passwd"]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [{
+          "type": "help",
+          "helpvalue": "<em class='text-danger'>Use only if you know what you are doing !</em>"
+        },
+        "advanced"
+      ]
+    }
+  ]
+}
