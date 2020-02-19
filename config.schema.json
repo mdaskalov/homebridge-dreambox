@@ -7,6 +7,11 @@
   "schema": {
     "type": "object",
     "properties": {
+      "name": {
+        "title": "Name for your dreambox",
+        "type": "string",
+        "required": true
+      },
       "hostname": {
         "title": "Hostname of your dreambox",
         "type": "string",
@@ -29,6 +34,9 @@
     }
   },
   "layout": [{
+      "type": "div",
+      "items": ["name"]
+    }, {
       "type": "div",
       "items": ["hostname"]
     },
