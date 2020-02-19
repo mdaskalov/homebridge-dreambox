@@ -226,16 +226,19 @@ class DreamboxDevice {
         command = '174';
         break;
       case Characteristic.RemoteKey.PLAY_PAUSE:
-        command = '164';
+        command = '139'; // Menu
         break;
       case Characteristic.RemoteKey.INFORMATION:
-        command = '139';
+        command = '358';
         break;
     }
-    this.log('Device: %s, key prssed: %s, command: %s', this.hostname, remoteKey, command);
-    callback(null, remoteKey);
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/remotecontrol?command=' + command;
+    this.log('Device: %s, key: %s, url: %s', this.hostname, remoteKey, command, url);
+    fetch(url)
+      .then(res => res.text())
+      .then(body => callback(null, remoteKey))
+      .catch(err => callback(err));
   }
-
 };
 
 module.exports = DreamboxDevice;
