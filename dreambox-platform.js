@@ -6,7 +6,9 @@ class DreamboxPlatform {
   // api may be null if launched from old homebridge version
   constructor(log, config, api) {
     this.log = log;
-    this.config = config;
+    this.config = config || {};
+    this.devices = config.devices || [];
+    this.accessories = [];
 
     this.log("DreamboxPlatform Init");
 
@@ -18,7 +20,7 @@ class DreamboxPlatform {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
 
-      this.accessory = new DreamboxDevice(log, this.config, this.api);
+      this.devices.forEach(device => this.accessories.push(new DreamboxDevice(log, device, api)));
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
