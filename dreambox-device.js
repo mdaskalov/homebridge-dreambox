@@ -1,3 +1,6 @@
+const fetch = require('node-fetch');
+const xml2js = require('xml2js');
+
 var Accessory, Service, Characteristic, UUIDGen;
 
 const responseDelay = 1500;
@@ -11,15 +14,17 @@ class DreamboxDevice {
     if (config === undefined || config === null)
       return;
 
-    this.name = config["name"] || 'Dreambox';
-    this.hostname = config["hostname"] || 'dreambox';
+    this.name = config["name"];
+    this.hostname = config["hostname"];
+    this.bouquet = config["bouquet"] || 'favourites';
 
     this.powerState = false;
     this.muteState = false;
     this.volumeState = 0;
-    this.channelReference = 0;
+    this.channel = 0;
+    this.channelReferences = [];
 
-    this.log("Initializing Dreambox TV-device")
+    this.log('Initializing Dreambox TV-device: ' + this.name)
 
     // Accessory must be created from PlatformAccessory Constructor
     Accessory = this.api.platformAccessory;
@@ -32,7 +37,7 @@ class DreamboxDevice {
     // Device Info
     this.manufacturer = 'Dream Multimedia';
     this.modelName = 'homebridge-dreambox';
-    this.serialNumber = 'SN000123';
+    this.serialNumber = this.hostname;
     this.firmwareRevision = 'FW000345';
 
     setTimeout(this.prepareTvService.bind(this), responseDelay);
@@ -57,8 +62,8 @@ class DreamboxDevice {
 
     this.tvService.getCharacteristic(Characteristic.ActiveIdentifier)
       .on('get', this.getChannel.bind(this))
-      .on('set', (channelReference, callback) => {
-        this.setChannel(callback, channelReference);
+      .on('set', (channel, callback) => {
+        this.setChannel(callback, channel);
       });
 
     this.tvService.getCharacteristic(Characteristic.RemoteKey)
@@ -101,8 +106,25 @@ class DreamboxDevice {
 
   prepareTvInputServices() {
     this.log('prepareTvInputServices');
-    this.createInputSource("source1", "TV Input 1", 1);
-    this.createInputSource("source2", "TV Input 2", 2);
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/getservices?sRef=1:7:1:0:0:0:0:0:0:0:FROM%20BOUQUET%20%22userbouquet.' + encodeURIComponent(this.bouquet) + '.tv%22%20ORDER%20BY%20bouquet';
+    fetch(url)
+      .then(res => res.text())
+      .then(body => xml2js.parseStringPromise(body, {
+        explicitArray: false
+      }))
+      .then(result => {
+        this.log('channels: ' + JSON.stringify(result, null, 2))
+        if (result.e2servicelist && result.e2servicelist.e2service) {
+          result.e2servicelist.e2service.forEach((element, channel) => {
+            const channelName = String(channel + 1).padStart(2, '0') + '. ' + element.e2servicename;
+            const channelReference = element.e2servicereference;
+            this.log(channelName);
+            this.createInputSource(channelReference, channelName, channel);
+            this.channelReferences.push(channelReference);
+          })
+        }
+      })
+      .catch(err => this.log(err));
   }
 
   createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
@@ -161,14 +183,19 @@ class DreamboxDevice {
   }
 
   getChannel(callback) {
-    this.log('Device: %s, get current Channel successfull: %s', this.hostname, this.channelReference);
-    callback(null, this.channelReference);
+    this.log('Device: %s, get current Channel successfull: %s', this.hostname, this.channel);
+    callback(null, this.channel);
   }
 
-  setChannel(callback, channelReference) {
-    this.channelReference = channelReference;
-    this.log('Device: %s, set new Channel successfull: %s', this.hostname, this.channelReference);
-    callback(null, this.channelReference);
+  setChannel(callback, channel) {
+    this.channel = channel;
+    const reference = this.channelReferences[this.channel];
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/zap?sRef=' + reference;
+    this.log('Device: %s, set new channel: %s, url: %s', this.hostname, channel, url);
+    fetch(url)
+      .then(res => res.text())
+      .then(body => callback(null, channel))
+      .catch(err => callback(err));
   }
 
   setPowerMode(state, callback) {
