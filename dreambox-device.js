@@ -105,13 +105,14 @@ class DreamboxDevice {
     this.createInputSource("source2", "TV Input 2", 2);
   }
 
-  createInputSource(reference, name, number, type = Characteristic.InputSourceType.TV) {
+  createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
     var input = new Service.InputSource(reference, name);
     input
       .setCharacteristic(Characteristic.Identifier, number)
       .setCharacteristic(Characteristic.ConfiguredName, name)
       .setCharacteristic(Characteristic.IsConfigured, Characteristic.IsConfigured.CONFIGURED)
-      .setCharacteristic(Characteristic.InputSourceType, type)
+      .setCharacteristic(Characteristic.InputSourceType, sourceType)
+      .setCharacteristic(Characteristic.InputDeviceType, deviceType)
       .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN);
 
     input
