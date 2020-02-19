@@ -2,30 +2,30 @@
   "pluginAlias": "Dreambox",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "More info about this plugin at [GitHub](https://github.com/mdaskalov/)",
+  "headerDisplay": "More info about this plugin at [GitHub](https://github.com/mdaskalov/). Feel free to give me a star.",
   "footerDisplay": "Made with ❤️ by Millko Daskalov",
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name for your dreambox",
-        "type": "string",
-        "required": true
-      },
-      "hostname": {
-        "title": "Hostname of your dreambox",
-        "type": "string",
-        "required": true
-      },
-      "userid": {
-        "title": "UserID for the web interface",
-        "type": "string",
-        "required": true
-      },
-      "passwd": {
-        "title": "Password for the web interface",
-        "type": "string",
-        "required": true
+      "devices": {
+        "title": "Dreambox Devices",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true
+            },
+            "hostname": {
+              "title": "IP Address/Hostname",
+              "type": "string",
+              "required": true,
+              "format": "hostname"
+            }
+          }
+        }
       },
       "advanced": {
         "title": "Use advanced setting",
@@ -34,16 +34,16 @@
     }
   },
   "layout": [{
-      "type": "div",
-      "items": ["name"]
-    }, {
-      "type": "div",
-      "items": ["hostname"]
-    },
-    {
-      "type": "flex",
-      "flex-flow": "row wrap",
-      "items": ["userid", "passwd"]
+      "nodescription": true,
+      "notitle": true,
+      "key": "devices",
+      "title": "{{ 'Device ' + $index}}",
+      "type": "tabarray",
+      "items": [{
+        "key": "devices[].name"
+      }, {
+        "key": "devices[].hostname"
+      }]
     },
     {
       "type": "fieldset",
