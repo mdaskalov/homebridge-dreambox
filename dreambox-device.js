@@ -57,8 +57,8 @@ class DreamboxDevice {
 
     this.tvService.getCharacteristic(Characteristic.ActiveIdentifier)
       .on('get', this.getChannel.bind(this))
-      .on('set', (inputIdentifier, callback) => {
-        this.setChannel(callback, this.channelReferences[inputIdentifier]);
+      .on('set', (channelReference, callback) => {
+        this.setChannel(callback, channelReference);
       });
 
     this.tvService.getCharacteristic(Characteristic.RemoteKey)
@@ -117,7 +117,7 @@ class DreamboxDevice {
     input
       .getCharacteristic(Characteristic.ConfiguredName)
       .on('set', (name, callback) => {
-        this.log('Device: %s, saved new channel successfull, name: %s, reference: %s', this.host, name, reference);
+        this.log('Device: %s, saved new channel successfull, name: %s, reference: %s', this.hostname, name, reference);
         callback()
       });
 
@@ -166,12 +166,12 @@ class DreamboxDevice {
 
   setChannel(callback, channelReference) {
     this.channelReference = channelReference;
-    this.log('Device: %s, set new Channel successfull: %s', me.hostname, this.channelReference);
+    this.log('Device: %s, set new Channel successfull: %s', this.hostname, this.channelReference);
     callback(null, this.channelReference);
   }
 
-  setPowerMode(callback, state) {
-    this.log('Device: %s, set new Power Mode successfull, state: %s', me.host, state);
+  setPowerMode(state, callback) {
+    this.log('Device: %s, set new Power Mode successfull, state: %s', this.hostname, state);
     callback(null, state);
   }
 
@@ -232,7 +232,7 @@ class DreamboxDevice {
         command = '139';
         break;
     }
-    this.log('Device: %s, key prssed: %s, command: %s', me.hostname, remoteKey, command);
+    this.log('Device: %s, key prssed: %s, command: %s', this.hostname, remoteKey, command);
     callback(null, remoteKey);
   }
 
