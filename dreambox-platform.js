@@ -7,7 +7,6 @@ class DreamboxPlatform {
   constructor(log, config, api) {
     this.log = log;
     this.config = config;
-    this.name = config["name"];
 
     this.log("DreamboxPlatform Init");
 
