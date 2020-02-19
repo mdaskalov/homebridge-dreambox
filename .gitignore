@@ -1,0 +1,8 @@
+/build/
+/node_modules/
+/scripts/
+/testdata/
+/bouquets/
+config.json
+yarn-error.log
+package-lock.json
