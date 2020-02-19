@@ -7,8 +7,12 @@ class DreamboxDevice {
     this.log = log;
     this.config = config;
     this.api = api;
-    this.name = config["name"];
-    this.hostname = config["hostname"]
+
+    if (config === undefined || config === null)
+      return;
+
+    this.name = config["name"] || 'Dreambox';
+    this.hostname = config["hostname"] || 'dreambox';
 
     this.powerState = false;
     this.muteState = false;
