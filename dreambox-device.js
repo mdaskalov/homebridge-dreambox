@@ -119,7 +119,7 @@ class DreamboxDevice {
           res.e2servicelist.e2service.forEach(element => {
             const channelName = String(channel + 1).padStart(2, '0') + '. ' + element.e2servicename;
             const channelReference = element.e2servicereference;
-            if (channel < 97 && !channelReference.startsWith('1:64:1:')) { // Max 97 channels can be used, skip markers
+            if (channel < 97 && !channelReference.startsWith('1:64:')) { // Max 97 channels can be used, skip markers
               this.createInputSource(channelReference, channelName, channel);
               this.channelReferences.push(channelReference);
               channel++;
@@ -203,8 +203,32 @@ class DreamboxDevice {
   }
 
   getChannel(callback) {
-    this.log('Device: %s, get current Channel successfull: %s', this.hostname, this.channel);
-    callback(null, this.channel);
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/getcurrent';
+    if (this.powerState) {
+      fetch(url)
+        .then(res => res.text())
+        .then(body => xml2js.parseStringPromise(body, {
+          explicitArray: false
+        }))
+        .then(res => {
+          this.log.debug('getcurrent: ' + JSON.stringify(res, null, 2))
+          if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
+            const reference = res.e2currentserviceinformation.e2service.e2servicereference;
+            const channel = this.channelReferences.indexOf(reference);
+            this.log('current channel: %s, (%s) ', channel, reference);
+            if (channel != -1) {
+              this.log('Device: %s, get current Channel successfull: %s, (%s)', this.hostname, channel, reference);
+              this.channel = channel;
+            }
+          }
+          callback(null, this.channel);
+        })
+        .catch(err => {
+          this.log(err);
+          callback(err);
+        });
+    } else
+      callback(null, this.channel);
   }
 
   setChannel(callback, channel) {
