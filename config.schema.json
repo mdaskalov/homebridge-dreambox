@@ -1,9 +1,7 @@
 {
-  "pluginAlias": "DreamboxPlatform",
+  "pluginAlias": "Dreambox",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "More info about this plugin at [GitHub](https://github.com/mdaskalov/). Feel free to give me a star.",
-  "footerDisplay": "Made with ❤️ by Millko Daskalov",
   "schema": {
     "type": "object",
     "properties": {
@@ -31,8 +29,8 @@
           }
         }
       },
-      "advanced": {
-        "title": "Use advanced setting",
+      "mqtt": {
+        "title": "Use MQTT to update the dreambox state",
         "type": "boolean"
       }
     }
@@ -58,9 +56,9 @@
       "expanded": false,
       "items": [{
           "type": "help",
-          "helpvalue": "<em class='text-danger'>Use only if you know what you are doing !</em>"
+          "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
-        "advanced"
+        "mqtt"
       ]
     }
   ]
