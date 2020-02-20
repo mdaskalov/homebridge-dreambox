@@ -10,6 +10,7 @@ class DreamboxPlatform {
     this.devices = this.config.devices || [];
     this.accessories = [];
 
+    // eslint-disable-next-line quotes
     this.log("DreamboxPlatform Init");
 
     if (this.version < 2.1) {
@@ -33,7 +34,7 @@ class DreamboxPlatform {
   // Developer can configure accessory at here (like setup event handler).
   // Update current value.
   configureAccessory(accessory) {
-    this.log(accessory.displayName, "Configure Accessory");
+    this.log(accessory.displayName, 'Configure Accessory');
     var platform = this;
 
     // Set the accessory to reachable if plugin can currently process the accessory,
@@ -42,7 +43,7 @@ class DreamboxPlatform {
     accessory.reachable = true;
 
     accessory.on('identify', (paired, callback) => {
-      platform.log(accessory.displayName, "Identify!!!");
+      platform.log(accessory.displayName, 'Identify!!!');
       callback();
     });
   }

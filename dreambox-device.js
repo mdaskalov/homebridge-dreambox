@@ -14,9 +14,9 @@ class DreamboxDevice {
     if (config === undefined || config === null)
       return;
 
-    this.name = config["name"];
-    this.hostname = config["hostname"];
-    this.bouquet = config["bouquet"] || 'favourites';
+    this.name = config['name'];
+    this.hostname = config['hostname'];
+    this.bouquet = config['bouquet'] || 'favourites';
 
     this.powerState = false;
     this.muteState = false;
@@ -24,7 +24,7 @@ class DreamboxDevice {
     this.channel = 0;
     this.channelReferences = [];
 
-    this.log('Initializing Dreambox TV-device: ' + this.name)
+    this.log('Initializing Dreambox TV-device: ' + this.name);
 
     // Accessory must be created from PlatformAccessory Constructor
     Accessory = this.api.platformAccessory;
@@ -113,7 +113,7 @@ class DreamboxDevice {
         explicitArray: false
       }))
       .then(res => {
-        this.log.debug('getservices: ' + JSON.stringify(res, null, 2))
+        this.log.debug('getservices: ' + JSON.stringify(res, null, 2));
         if (res.e2servicelist && res.e2servicelist.e2service) {
           var channel = 0;
           res.e2servicelist.e2service.forEach(element => {
@@ -124,11 +124,11 @@ class DreamboxDevice {
               this.channelReferences.push(channelReference);
               channel++;
             }
-          })
+          });
           this.log('Device: %s, %s channel(s) configured', this.hostname, this.channelReferences.length);
         }
       })
-      .catch(err => callback(err));
+      .catch(err => this.log(err));
   }
 
   createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
@@ -145,7 +145,7 @@ class DreamboxDevice {
       .getCharacteristic(Characteristic.ConfiguredName)
       .on('set', (name, callback) => {
         this.log('Device: %s, saved new channel successfull, name: %s, reference: %s', this.hostname, name, reference);
-        callback()
+        callback();
       });
 
     this.tvAccesory.addService(input);
@@ -161,7 +161,7 @@ class DreamboxDevice {
         explicitArray: false
       }))
       .then(res => {
-        this.log.debug('powerstate: ' + JSON.stringify(res, null, 2))
+        this.log.debug('powerstate: ' + JSON.stringify(res, null, 2));
         if (res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
           this.log('Device: %s, get current Power state successfull: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
@@ -176,7 +176,7 @@ class DreamboxDevice {
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/powerstate?newstate=' + (state ? '4' : '5');
     this.log('Device: %s, set new power state: %s, url: %s', this.hostname, state ? 'ON' : 'STANDBY', url);
     fetch(url)
-      .then(res => callback(null, state))
+      .then(callback(null, state))
       .catch(err => callback(err));
   }
 
@@ -211,7 +211,7 @@ class DreamboxDevice {
           explicitArray: false
         }))
         .then(res => {
-          this.log.debug('getcurrent: ' + JSON.stringify(res, null, 2))
+          this.log.debug('getcurrent: ' + JSON.stringify(res, null, 2));
           if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
             const reference = res.e2currentserviceinformation.e2service.e2servicereference;
             const channel = this.channelReferences.indexOf(reference);
@@ -236,7 +236,7 @@ class DreamboxDevice {
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/zap?sRef=' + reference;
     this.log('Device: %s, set new channel: %s, url: %s', this.hostname, channel, url);
     fetch(url)
-      .then(res => callback(null, channel))
+      .then(callback(null, channel))
       .catch(err => callback(err));
   }
 
@@ -305,9 +305,9 @@ class DreamboxDevice {
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/remotecontrol?command=' + command;
     this.log('Device: %s, key: %s, url: %s', this.hostname, remoteKey, command, url);
     fetch(url)
-      .then(res => callback(null, remoteKey))
+      .then(callback(null, remoteKey))
       .catch(err => callback(err));
   }
-};
+}
 
 module.exports = DreamboxDevice;
