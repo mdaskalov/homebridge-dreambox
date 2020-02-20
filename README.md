@@ -1,5 +1,6 @@
 # General
-[![npm](https://img.shields.io/npm/dt/homebridge-dreambox.svg)](https://www.npmjs.com/package/homebridge-dreambox) 
+
+[![npm](https://img.shields.io/npm/dt/homebridge-dreambox.svg)](https://www.npmjs.com/package/homebridge-dreambox)
 [![npm](https://img.shields.io/npm/v/homebridge-dreambox.svg)](https://www.npmjs.com/package/homebridge-dreambox)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/mdaskalov/homebridge-dreambox.svg)](https://github.com/mdaskalov/homebridge-dreambox/pulls)
 [![GitHub issues](https://img.shields.io/github/issues/mdaskalov/homebridge-dreambox.svg)](https://github.com/mdaskalov/homebridge-dreambox/issues)
@@ -14,6 +15,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 * alternatively the [Homebridge Config UI X](https://github.com/oznu/homebridge-config-ui-x) can be used to install and configure
 
 # Configuration
+
 ```
 {
     "platform": "Dreambox"
