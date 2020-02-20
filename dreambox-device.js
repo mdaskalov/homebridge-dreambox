@@ -246,62 +246,32 @@ class DreamboxDevice {
   }
 
   volumeSelectorPress(remoteKey, callback) {
-    var command = 0;
-    switch (remoteKey) {
-      case Characteristic.VolumeSelector.INCREMENT:
-        command = 'UP';
-        break;
-      case Characteristic.VolumeSelector.DECREMENT:
-        command = 'DOWN';
-        break;
-    }
+    const commands = new Map([
+      [Characteristic.VolumeSelector.INCREMENT, 'UP'],
+      [Characteristic.VolumeSelector.DECREMENT, 'DOWN'],
+    ]);
+    const command = commands.get(remoteKey) || '';
     this.log('Device: %s, key prssed: %s, command: %s', this.hostname, remoteKey, command);
     callback(null, remoteKey);
   }
 
   remoteKeyPress(remoteKey, callback) {
-    var command = 0;
-    switch (remoteKey) {
-      case Characteristic.RemoteKey.REWIND:
-        command = '168';
-        break;
-      case Characteristic.RemoteKey.FAST_FORWARD:
-        command = '159';
-        break;
-      case Characteristic.RemoteKey.NEXT_TRACK:
-        command = '407';
-        break;
-      case Characteristic.RemoteKey.PREVIOUS_TRACK:
-        command = '412';
-        break;
-      case Characteristic.RemoteKey.ARROW_UP:
-        command = '103';
-        break;
-      case Characteristic.RemoteKey.ARROW_DOWN:
-        command = '108';
-        break;
-      case Characteristic.RemoteKey.ARROW_LEFT:
-        command = '105';
-        break;
-      case Characteristic.RemoteKey.ARROW_RIGHT:
-        command = '106';
-        break;
-      case Characteristic.RemoteKey.SELECT:
-        command = '352';
-        break;
-      case Characteristic.RemoteKey.BACK:
-        command = '174';
-        break;
-      case Characteristic.RemoteKey.EXIT:
-        command = '174';
-        break;
-      case Characteristic.RemoteKey.PLAY_PAUSE:
-        command = '139'; // Menu
-        break;
-      case Characteristic.RemoteKey.INFORMATION:
-        command = '358';
-        break;
-    }
+    const commands = new Map([
+      [Characteristic.RemoteKey.REWIND, 168],
+      [Characteristic.RemoteKey.FAST_FORWARD, 159],
+      [Characteristic.RemoteKey.NEXT_TRACK, 407],
+      [Characteristic.RemoteKey.PREVIOUS_TRACK, 412],
+      [Characteristic.RemoteKey.ARROW_UP, 103],
+      [Characteristic.RemoteKey.ARROW_DOWN, 108],
+      [Characteristic.RemoteKey.ARROW_LEFT, 105],
+      [Characteristic.RemoteKey.ARROW_RIGHT, 106],
+      [Characteristic.RemoteKey.SELECT, 352],
+      [Characteristic.RemoteKey.BACK, 174],
+      [Characteristic.RemoteKey.EXIT, 174],
+      [Characteristic.RemoteKey.PLAY_PAUSE, 139],
+      [Characteristic.RemoteKey.INFORMATION, 358],
+    ]);
+    const command = commands.get(remoteKey) || 0;
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/remotecontrol?command=' + command;
     this.log('Device: %s, key: %s, url: %s', this.hostname, remoteKey, command, url);
     fetch(url)
