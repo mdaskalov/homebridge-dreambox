@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "Dreambox",
+  "pluginAlias": "DreamboxPlatform",
   "pluginType": "platform",
   "singular": true,
   "headerDisplay": "More info about this plugin at [GitHub](https://github.com/mdaskalov/). Feel free to give me a star.",

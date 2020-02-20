@@ -5,7 +5,7 @@ module.exports = homebridge => {
   // registerPlatform(pluginName, platformName, constructor, dynamic), dynamic must be true
   homebridge.registerPlatform(
     "homebridge-dreambox",
-    "Dreambox",
+    "DreamboxPlatform",
     DreamboxPlatform,
     true
   );
