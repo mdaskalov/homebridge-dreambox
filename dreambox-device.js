@@ -112,19 +112,21 @@ class DreamboxDevice {
       .then(body => xml2js.parseStringPromise(body, {
         explicitArray: false
       }))
-      .then(result => {
-        this.log('channels: ' + JSON.stringify(result, null, 2))
-        if (result.e2servicelist && result.e2servicelist.e2service) {
-          result.e2servicelist.e2service.forEach((element, channel) => {
+      .then(res => {
+        this.log.debug('getservices: ' + JSON.stringify(res, null, 2))
+        if (res.e2servicelist && res.e2servicelist.e2service) {
+          res.e2servicelist.e2service.forEach((element, channel) => {
             const channelName = String(channel + 1).padStart(2, '0') + '. ' + element.e2servicename;
             const channelReference = element.e2servicereference;
-            this.log(channelName);
-            this.createInputSource(channelReference, channelName, channel);
-            this.channelReferences.push(channelReference);
+            if (channel < 97) { // Max 97 channels can be used
+              this.createInputSource(channelReference, channelName, channel);
+              this.channelReferences.push(channelReference);
+            }
           })
+          this.log('Device: %s, %s channel(s) configured', this.hostname, this.channelReferences.length);
         }
       })
-      .catch(err => this.log(err));
+      .catch(err => callback(err));
   }
 
   createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
@@ -150,14 +152,30 @@ class DreamboxDevice {
   }
 
   getPowerState(callback) {
-    this.log('Device: %s, get current Power state successfull: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
-    callback(null, this.powerState);
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/powerstate';
+    fetch(url)
+      .then(res => res.text())
+      .then(body => xml2js.parseStringPromise(body, {
+        explicitArray: false
+      }))
+      .then(res => {
+        this.log.debug('powerstate: ' + JSON.stringify(res, null, 2))
+        if (res.e2powerstate && res.e2powerstate.e2instandby) {
+          this.powerState = res.e2powerstate.e2instandby === 'false';
+          this.log('Device: %s, get current Power state successfull: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
+          callback(null, this.powerState);
+        }
+      })
+      .catch(err => callback(err));
   }
 
   setPowerState(state, callback) {
     this.powerState = state;
-    this.log('Device: %s, set new Power state successfull: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
-    callback(null, state);
+    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/powerstate?newstate=' + (state ? '4' : '5');
+    this.log('Device: %s, set new power state: %s, url: %s', this.hostname, state ? 'ON' : 'STANDBY', url);
+    fetch(url)
+      .then(res => callback(null, state))
+      .catch(err => callback(err));
   }
 
   getMute(callback) {
@@ -193,8 +211,7 @@ class DreamboxDevice {
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/zap?sRef=' + reference;
     this.log('Device: %s, set new channel: %s, url: %s', this.hostname, channel, url);
     fetch(url)
-      .then(res => res.text())
-      .then(body => callback(null, channel))
+      .then(res => callback(null, channel))
       .catch(err => callback(err));
   }
 
@@ -263,8 +280,7 @@ class DreamboxDevice {
     const url = 'http://' + encodeURIComponent(this.hostname) + '/web/remotecontrol?command=' + command;
     this.log('Device: %s, key: %s, url: %s', this.hostname, remoteKey, command, url);
     fetch(url)
-      .then(res => res.text())
-      .then(body => callback(null, remoteKey))
+      .then(res => callback(null, remoteKey))
       .catch(err => callback(err));
   }
 };
