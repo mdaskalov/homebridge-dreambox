@@ -17,7 +17,7 @@
     "enigma2"
   ],
   "author": "Milko Daskalov",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/mdaskalov/homebridge-dreambox/issues"
   },
