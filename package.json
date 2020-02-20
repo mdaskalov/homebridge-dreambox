@@ -4,7 +4,7 @@
   "description": "Control your Dreambox as HomeKit TV-Appliance",
   "main": "index.js",
   "scripts": {
-    "test": "node index.js && echo \\\"No syntax errors! (node $(node -v))\\\""
+    "test": "node index.js && echo \"No syntax errors! (node $(node -v))\""
   },
   "repository": {
     "type": "git",
