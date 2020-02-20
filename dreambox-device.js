@@ -115,12 +115,14 @@ class DreamboxDevice {
       .then(res => {
         this.log.debug('getservices: ' + JSON.stringify(res, null, 2))
         if (res.e2servicelist && res.e2servicelist.e2service) {
-          res.e2servicelist.e2service.forEach((element, channel) => {
+          var channel = 0;
+          res.e2servicelist.e2service.forEach(element => {
             const channelName = String(channel + 1).padStart(2, '0') + '. ' + element.e2servicename;
             const channelReference = element.e2servicereference;
-            if (channel < 97) { // Max 97 channels can be used
+            if (channel < 97 && !channelReference.startsWith('1:64:1:')) { // Max 97 channels can be used, skip markers
               this.createInputSource(channelReference, channelName, channel);
               this.channelReferences.push(channelReference);
+              channel++;
             }
           })
           this.log('Device: %s, %s channel(s) configured', this.hostname, this.channelReferences.length);
