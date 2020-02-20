@@ -23,6 +23,10 @@
               "type": "string",
               "required": true,
               "format": "hostname"
+            },
+            "bouquet": {
+              "title": "Bouquet Name",
+              "type": "string"
             }
           }
         }
@@ -43,6 +47,8 @@
         "key": "devices[].name"
       }, {
         "key": "devices[].hostname"
+      }, {
+        "key": "devices[].bouquet"
       }]
     },
     {
