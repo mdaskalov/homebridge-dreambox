@@ -215,7 +215,6 @@ class DreamboxDevice {
           if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
             const reference = res.e2currentserviceinformation.e2service.e2servicereference;
             const channel = this.channelReferences.indexOf(reference);
-            this.log('current channel: %s, (%s) ', channel, reference);
             if (channel != -1) {
               this.log('Device: %s, get current Channel successfull: %s, (%s)', this.hostname, channel, reference);
               this.channel = channel;
