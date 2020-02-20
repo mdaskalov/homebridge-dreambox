@@ -7,7 +7,7 @@ class DreamboxPlatform {
   constructor(log, config, api) {
     this.log = log;
     this.config = config || {};
-    this.devices = config.devices || [];
+    this.devices = this.config.devices || [];
     this.accessories = [];
 
     this.log("DreamboxPlatform Init");
