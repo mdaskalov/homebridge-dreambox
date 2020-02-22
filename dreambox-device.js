@@ -5,7 +5,7 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 const responseDelay = 1500;
 
-class DreamboxDevice {
+class DreamboxAccessory {
   constructor(log, config, api) {
     this.log = log;
     this.config = config;
@@ -280,4 +280,4 @@ class DreamboxDevice {
   }
 }
 
-module.exports = DreamboxDevice;
+module.exports = DreamboxAccessory;
