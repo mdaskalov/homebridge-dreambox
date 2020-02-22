@@ -36,6 +36,8 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 [HomeKit-TV](https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit-TV.ts)
 
+[Enigma2 WebInterface API Documentation](https://dream.reichholf.net/e2web/)
+
 [homebridge-sony-television](https://github.com/arnif/homebridge-sony-television)
 
 [homebridge-denon-tv](https://github.com/grzegorz914/homebridge-denon-tv)
