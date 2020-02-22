@@ -107,14 +107,14 @@ class DreamboxAccessory {
   callEnigmaWebAPI(path) {
     return new Promise((resolve, reject) => {
       const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
-      this.log('callEnigmaWebAPI: %s', url);
+      this.log.debug('callEnigmaWebAPI: %s', url);
       fetch(url)
         .then(res => res.text())
         .then(body => xml2js.parseStringPromise(body, {
           explicitArray: false
         }))
         .then(res => {
-          this.log('callEnigmaWebAPI response: ' + JSON.stringify(res, null, 2));
+          this.log.debug('callEnigmaWebAPI response: ' + JSON.stringify(res, null, 2));
           resolve(res);
         })
         .catch(err => reject(err));
