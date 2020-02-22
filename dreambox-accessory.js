@@ -108,12 +108,12 @@ class DreamboxAccessory {
     return new Promise((resolve, reject) => {
       const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
       this.log('callEnigmaWebAPI: %s', url);
-    fetch(url)
-      .then(res => res.text())
-      .then(body => xml2js.parseStringPromise(body, {
-        explicitArray: false
-      }))
-      .then(res => {
+      fetch(url)
+        .then(res => res.text())
+        .then(body => xml2js.parseStringPromise(body, {
+          explicitArray: false
+        }))
+        .then(res => {
           this.log('callEnigmaWebAPI response: ' + JSON.stringify(res, null, 2));
           resolve(res);
         })
@@ -243,12 +243,14 @@ class DreamboxAccessory {
 
   volumeSelectorPress(remoteKey, callback) {
     const commands = new Map([
-      [Characteristic.VolumeSelector.INCREMENT, 'UP'],
-      [Characteristic.VolumeSelector.DECREMENT, 'DOWN'],
+      [Characteristic.VolumeSelector.INCREMENT, 'up'],
+      [Characteristic.VolumeSelector.DECREMENT, 'down'],
     ]);
     const command = commands.get(remoteKey) || '';
-    this.log('Device: %s, key prssed: %s, command: %s', this.hostname, remoteKey, command);
-    callback(null, remoteKey);
+    this.log('Device: %s, volumeSelectorPress: %s, command: %s', this.hostname, remoteKey, command);
+    this.callEnigmaWebAPI('vol?set=' + command)
+      .then(callback(null, remoteKey))
+      .catch(err => callback(err));
   }
 
   remoteKeyPress(remoteKey, callback) {
