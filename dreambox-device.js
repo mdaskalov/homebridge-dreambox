@@ -57,20 +57,20 @@ class DreamboxDevice {
     this.tvService.setCharacteristic(Characteristic.SleepDiscoveryMode, Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
 
     this.tvService.getCharacteristic(Characteristic.Active)
-      .on('get', this.getPowerState.bind(this))
-      .on('set', this.setPowerState.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.GET, this.getPowerState.bind(this))
+      .on(Characteristic.CharacteristicEventTypes.SET, this.setPowerState.bind(this));
 
     this.tvService.getCharacteristic(Characteristic.ActiveIdentifier)
-      .on('get', this.getChannel.bind(this))
-      .on('set', (channel, callback) => {
+      .on(Characteristic.CharacteristicEventTypes.GET, this.getChannel.bind(this))
+      .on(Characteristic.CharacteristicEventTypes.SET, (channel, callback) => {
         this.setChannel(callback, channel);
       });
 
     this.tvService.getCharacteristic(Characteristic.RemoteKey)
-      .on('set', this.remoteKeyPress.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.SET, this.remoteKeyPress.bind(this));
 
     this.tvService.getCharacteristic(Characteristic.PowerModeSelection)
-      .on('set', this.setPowerMode.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.SET, this.setPowerMode.bind(this));
 
     this.tvAccesory
       .getService(Service.AccessoryInformation)
@@ -92,13 +92,13 @@ class DreamboxDevice {
       .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.ABSOLUTE);
     this.tvSpeakerService.getCharacteristic(Characteristic.VolumeSelector)
-      .on('set', this.volumeSelectorPress.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.SET, this.volumeSelectorPress.bind(this));
     this.tvSpeakerService.getCharacteristic(Characteristic.Volume)
-      .on('get', this.getVolume.bind(this))
-      .on('set', this.setVolume.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.GET, this.getVolume.bind(this))
+      .on(Characteristic.CharacteristicEventTypes.SET, this.setVolume.bind(this));
     this.tvSpeakerService.getCharacteristic(Characteristic.Mute)
-      .on('get', this.getMute.bind(this))
-      .on('set', this.setMute.bind(this));
+      .on(Characteristic.CharacteristicEventTypes.GET, this.getMute.bind(this))
+      .on(Characteristic.CharacteristicEventTypes.SET, this.setMute.bind(this));
 
     this.tvAccesory.addService(this.tvSpeakerService);
     this.tvService.addLinkedService(this.tvSpeakerService);
@@ -143,7 +143,7 @@ class DreamboxDevice {
 
     input
       .getCharacteristic(Characteristic.ConfiguredName)
-      .on('set', (name, callback) => {
+      .on(Characteristic.CharacteristicEventTypes.SET, (name, callback) => {
         this.log('Device: %s, saved new channel successfull, name: %s, reference: %s', this.hostname, name, reference);
         callback();
       });
