@@ -5,7 +5,7 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 const responseDelay = 1500;
 
-class DreamboxDevice {
+class DreamboxAccessory {
   constructor(log, config, api) {
     this.log = log;
     this.config = config;
@@ -104,16 +104,27 @@ class DreamboxDevice {
     this.tvService.addLinkedService(this.tvSpeakerService);
   }
 
+  callEnigmaWebAPI(path) {
+    return new Promise((resolve, reject) => {
+      const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
+      this.log.debug('callEnigmaWebAPI: %s', url);
+      fetch(url)
+        .then(res => res.text())
+        .then(body => xml2js.parseStringPromise(body, {
+          explicitArray: false
+        }))
+        .then(res => {
+          this.log.debug('callEnigmaWebAPI response: ' + JSON.stringify(res, null, 2));
+          resolve(res);
+        })
+        .catch(err => reject(err));
+    });
+  }
+
   prepareTvInputServices() {
     this.log('prepareTvInputServices');
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/getservices?sRef=1:7:1:0:0:0:0:0:0:0:FROM%20BOUQUET%20%22userbouquet.' + encodeURIComponent(this.bouquet) + '.tv%22%20ORDER%20BY%20bouquet';
-    fetch(url)
-      .then(res => res.text())
-      .then(body => xml2js.parseStringPromise(body, {
-        explicitArray: false
-      }))
+    this.callEnigmaWebAPI('getservices?sRef=1:7:1:0:0:0:0:0:0:0:FROM%20BOUQUET%20%22userbouquet.' + encodeURIComponent(this.bouquet) + '.tv%22%20ORDER%20BY%20bouquet')
       .then(res => {
-        this.log.debug('getservices: ' + JSON.stringify(res, null, 2));
         if (res.e2servicelist && res.e2servicelist.e2service) {
           var channel = 0;
           res.e2servicelist.e2service.forEach(element => {
@@ -154,17 +165,11 @@ class DreamboxDevice {
   }
 
   getPowerState(callback) {
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/powerstate';
-    fetch(url)
-      .then(res => res.text())
-      .then(body => xml2js.parseStringPromise(body, {
-        explicitArray: false
-      }))
+    this.callEnigmaWebAPI('powerstate')
       .then(res => {
-        this.log.debug('powerstate: ' + JSON.stringify(res, null, 2));
         if (res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
-          this.log('Device: %s, get current Power state successfull: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
+          this.log('Device: %s, getPowerState: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
           callback(null, this.powerState);
         }
       })
@@ -173,9 +178,8 @@ class DreamboxDevice {
 
   setPowerState(state, callback) {
     this.powerState = state;
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/powerstate?newstate=' + (state ? '4' : '5');
-    this.log('Device: %s, set new power state: %s, url: %s', this.hostname, state ? 'ON' : 'STANDBY', url);
-    fetch(url)
+    this.log('Device: %s, setPowerState: %s', this.hostname, state ? 'ON' : 'STANDBY');
+    this.callEnigmaWebAPI('powerstate?newstate=' + (state ? '4' : '5'))
       .then(callback(null, state))
       .catch(err => callback(err));
   }
@@ -203,20 +207,14 @@ class DreamboxDevice {
   }
 
   getChannel(callback) {
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/getcurrent';
     if (this.powerState) {
-      fetch(url)
-        .then(res => res.text())
-        .then(body => xml2js.parseStringPromise(body, {
-          explicitArray: false
-        }))
+      this.callEnigmaWebAPI('getcurrent')
         .then(res => {
-          this.log.debug('getcurrent: ' + JSON.stringify(res, null, 2));
           if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
             const reference = res.e2currentserviceinformation.e2service.e2servicereference;
             const channel = this.channelReferences.indexOf(reference);
             if (channel != -1) {
-              this.log('Device: %s, get current Channel successfull: %s, (%s)', this.hostname, channel, reference);
+              this.log('Device: %s, getChannel: %s, (%s)', this.hostname, channel, reference);
               this.channel = channel;
             }
           }
@@ -232,10 +230,8 @@ class DreamboxDevice {
 
   setChannel(callback, channel) {
     this.channel = channel;
-    const reference = this.channelReferences[this.channel];
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/zap?sRef=' + reference;
-    this.log('Device: %s, set new channel: %s, url: %s', this.hostname, channel, url);
-    fetch(url)
+    this.log('Device: %s, setChannel: %s', this.hostname, channel);
+    this.callEnigmaWebAPI('zap?sRef=' + encodeURIComponent(this.channelReferences[this.channel]))
       .then(callback(null, channel))
       .catch(err => callback(err));
   }
@@ -247,12 +243,14 @@ class DreamboxDevice {
 
   volumeSelectorPress(remoteKey, callback) {
     const commands = new Map([
-      [Characteristic.VolumeSelector.INCREMENT, 'UP'],
-      [Characteristic.VolumeSelector.DECREMENT, 'DOWN'],
+      [Characteristic.VolumeSelector.INCREMENT, 'up'],
+      [Characteristic.VolumeSelector.DECREMENT, 'down'],
     ]);
     const command = commands.get(remoteKey) || '';
-    this.log('Device: %s, key prssed: %s, command: %s', this.hostname, remoteKey, command);
-    callback(null, remoteKey);
+    this.log('Device: %s, volumeSelectorPress: %s, command: %s', this.hostname, remoteKey, command);
+    this.callEnigmaWebAPI('vol?set=' + command)
+      .then(callback(null, remoteKey))
+      .catch(err => callback(err));
   }
 
   remoteKeyPress(remoteKey, callback) {
@@ -272,12 +270,11 @@ class DreamboxDevice {
       [Characteristic.RemoteKey.INFORMATION, 358],
     ]);
     const command = commands.get(remoteKey) || 0;
-    const url = 'http://' + encodeURIComponent(this.hostname) + '/web/remotecontrol?command=' + command;
-    this.log('Device: %s, key: %s, url: %s', this.hostname, remoteKey, command, url);
-    fetch(url)
+    this.log('Device: %s, remoteKeyPress: %s, command: %s', this.hostname, remoteKey, command);
+    this.callEnigmaWebAPI('remotecontrol?command=' + command)
       .then(callback(null, remoteKey))
       .catch(err => callback(err));
   }
 }
 
-module.exports = DreamboxDevice;
+module.exports = DreamboxAccessory;
