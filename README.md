@@ -12,7 +12,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 * install homebridge `npm install -g homebridge`
 * install dreambox plugin `npm install -g homebridge-dreambox`
 * update the configuration file, configure name and IP/Hostname of your dreambox as follows
-* alternatively the [Homebridge Config UI X](https://github.com/oznu/homebridge-config-ui-x) can be used to install and configure
+* alternatively use the great [Homebridge Config UI X](https://github.com/oznu/homebridge-config-ui-x) plugin to install and configure
 
 # Configuration
 
