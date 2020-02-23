@@ -21,20 +21,31 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
     "platform": "Dreambox"
     "devices": [
         {
-            "name": "Dream",
-            "hostname": "dm900"
+            "name": "Dreambox",
+            "hostname": "dm900",
+            "bouquet": "homekitFavorites"
         }
     ],
 }
 ```
 
-# Reference
+# Usage
+
+Dreambox devices will be published as external accessory in orderd to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
+
+If no bouquet is configured favourites is used. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used with homekit.
+
+# References
 
 [homebridge-lib](https://github.com/ebaauw/homebridge-lib)
 
 [homebridge-ws](https://github.com/ebaauw/homebridge-ws)
 
 [HomeKit-TV](https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit-TV.ts)
+
+[Enigma2 WebInterface API Documentation](https://dream.reichholf.net/e2web/)
+
+[Enigma2 WebInterface Wiki](https://dream.reichholf.net/wiki/Enigma2:WebInterface)
 
 [homebridge-sony-television](https://github.com/arnif/homebridge-sony-television)
 
