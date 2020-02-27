@@ -123,20 +123,23 @@ class DreamboxAccessory {
 
   prepareTvInputServices() {
     this.log('prepareTvInputServices');
-    this.callEnigmaWebAPI('getservices?sRef=1:7:1:0:0:0:0:0:0:0:FROM%20BOUQUET%20%22userbouquet.' + encodeURIComponent(this.bouquet) + '.tv%22%20ORDER%20BY%20bouquet')
+    this.callEnigmaWebAPI('getallservices')
       .then(res => {
-        if (res.e2servicelist && res.e2servicelist.e2service) {
-          var channel = 0;
-          res.e2servicelist.e2service.forEach(element => {
-            const channelName = String(channel + 1).padStart(2, '0') + '. ' + element.e2servicename;
-            const channelReference = element.e2servicereference;
-            if (channel < 97 && !channelReference.startsWith('1:64:')) { // Max 97 channels can be used, skip markers
-              this.createInputSource(channelReference, channelName, channel);
-              this.channelReferences.push(channelReference);
-              channel++;
-            }
-          });
-          this.log('Device: %s, %s channel(s) configured', this.hostname, this.channelReferences.length);
+        if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+          let bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet)
+          if (bouquet) {
+            var channel = 0;
+            bouquet.e2servicelist.e2service.forEach(service => {
+              const channelName = String(channel + 1).padStart(2, '0') + '. ' + service.e2servicename;
+              const channelReference = service.e2servicereference;
+              if (channel < 97 && !channelReference.startsWith('1:64:')) { // Max 97 channels can be used, skip markers
+                this.createInputSource(channelReference, channelName, channel);
+                this.channelReferences.push(channelReference);
+                channel++;
+              }
+            });
+            this.log('Device: %s, %s channel(s) configured', this.hostname, this.channelReferences.length);
+          }
         }
       })
       .catch(err => this.log(err));
