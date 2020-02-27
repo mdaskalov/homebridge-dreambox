@@ -23,22 +23,23 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
         {
             "name": "Dreambox",
             "hostname": "dm900",
-            "bouquet": "homekitFavorites"
+            "bouquet": "HomekitFavorites"
         }
     ],
 }
 ```
+
 `name` - Accessory name to be used in the Home applicaiton. Should be unique.
 
 `hostname` - IP or hostname of your device to be accessible from homebridge.
 
-`bouquet` - the name of the bouquet containing the channels to be imported. The bouquet files are stored under `/etc/enigma2` as `userbouquet.{name}.tv`. Note: Bouquets created with the enigma2 GUI have a suffix `__tv_` and should be configured with this suffix. 
+`bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Confifgure teh exact bouquet name as shown in the GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
 
 # Usage
 
 Dreambox devices will be published as external accessory in orderd to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
 
-The channels are imported from the favorites bouquet if no bouquet is configured. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used with homekit.
+The plugin adds a dreambox remote in the control center. The play/pause button is used to show the menu. The volume buttons control the dreambox volume.
 
 # References
 
