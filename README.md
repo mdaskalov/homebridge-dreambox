@@ -33,7 +33,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 `hostname` - IP or hostname of your device to be accessible from homebridge.
 
-`bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Confifgure teh exact bouquet name as shown in the GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
+`bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Configure the name as shown in the GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
 
 # Usage
 
