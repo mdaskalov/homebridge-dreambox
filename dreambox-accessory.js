@@ -16,7 +16,7 @@ class DreamboxAccessory {
 
     this.name = config['name'];
     this.hostname = config['hostname'];
-    this.bouquet = config['bouquet'] || 'favourites';
+    this.bouquet = config['bouquet'] || 'Favourites (TV)';
 
     this.powerState = false;
     this.muteState = false;
