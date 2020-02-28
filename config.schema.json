@@ -17,10 +17,20 @@
               "required": true
             },
             "hostname": {
-              "title": "IP Address/Hostname",
+              "title": "IP Address / Hostname",
               "type": "string",
               "required": true,
               "format": "hostname"
+            },
+            "username": {
+              "title": "Username",
+              "type": "string",
+              "format": "password"
+            },
+            "password": {
+              "title": "Password",
+              "type": "string",
+              "format": "password"
             },
             "bouquet": {
               "title": "Bouquet Name",
@@ -45,6 +55,10 @@
         "key": "devices[].name"
       }, {
         "key": "devices[].hostname"
+      }, {
+        "key": "devices[].username"
+      }, {
+        "key": "devices[].password"
       }, {
         "key": "devices[].bouquet"
       }]
