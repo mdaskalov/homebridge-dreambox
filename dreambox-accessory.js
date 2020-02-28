@@ -16,6 +16,8 @@ class DreamboxAccessory {
 
     this.name = config['name'];
     this.hostname = config['hostname'];
+    this.username = config['username'];
+    this.password = config['password'];
     this.bouquet = config['bouquet'] || 'Favourites (TV)';
 
     this.powerState = false;
@@ -104,12 +106,26 @@ class DreamboxAccessory {
     this.tvService.addLinkedService(this.tvSpeakerService);
   }
 
-  callEnigmaWebAPI(path) {
+  callEnigmaWebAPI(path, options = {}) {
     return new Promise((resolve, reject) => {
       const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
       this.log.debug('callEnigmaWebAPI: %s', url);
-      fetch(url)
-        .then(res => res.text())
+
+      if (this.username && this.password) {
+        let auth = Buffer.from(this.username + ':' + this.password);
+        var headers = {
+          'Authorization': 'Basic ' + auth.toString('base64')
+        };
+        options.headers = headers;
+      }
+
+      fetch(url, options)
+        .then(res => {
+          if (res.ok)
+            return res.text();
+          else
+            throw Error(res.statusText);
+        })
         .then(body => xml2js.parseStringPromise(body, {
           explicitArray: false
         }))
@@ -126,7 +142,7 @@ class DreamboxAccessory {
     this.callEnigmaWebAPI('getallservices')
       .then(res => {
         if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
-          let bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet)
+          let bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet);
           if (bouquet) {
             var channel = 0;
             bouquet.e2servicelist.e2service.forEach(service => {
