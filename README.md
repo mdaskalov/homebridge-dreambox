@@ -39,7 +39,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 Dreambox devices will be published as external accessory in orderd to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
 
-The plugin adds a dreambox remote in the control center. The play/pause button is used to show the menu. The volume buttons control the dreambox volume.
+The plugin adds a dreambox remote in the control center. The play/pause button is used to show the menu. The physical volume buttons control the dreambox volume.
 
 # References
 
