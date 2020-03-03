@@ -1,4 +1,5 @@
 const DreamboxAccessory = require('./dreambox-accessory');
+const MQTTClient = require('./mqtt-client');
 
 class DreamboxPlatform {
   // Platform constructor
@@ -12,6 +13,16 @@ class DreamboxPlatform {
 
     // eslint-disable-next-line quotes
     this.log("DreamboxPlatform Init");
+
+    this.mqttClient = new MQTTClient(log, config);
+
+    this.mqttClient.mqttSubscribe('dreambox/state/power', (topic, message) => {
+      this.log('MQTT Handler: ' + topic + ', message: ' + message);
+    });
+
+    this.mqttClient.mqttSubscribe('dreambox/state/channel', (topic, message) => {
+      this.log('MQTT Handler: ' + topic + ', message: ' + message);
+    });
 
     if (this.version < 2.1) {
       throw new Error('Unexpected API version.');
