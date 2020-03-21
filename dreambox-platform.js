@@ -11,28 +11,19 @@ class DreamboxPlatform {
     this.devices = this.config.devices || [];
     this.accessories = [];
 
-    // eslint-disable-next-line quotes
-    this.log("DreamboxPlatform Init");
-
-    this.mqttClient = new MQTTClient(log, config);
-
-    this.mqttClient.mqttSubscribe('dreambox/state/power', (topic, message) => {
-      this.log('MQTT Handler: ' + topic + ', message: ' + message);
-    });
-
-    this.mqttClient.mqttSubscribe('dreambox/state/channel', (topic, message) => {
-      this.log('MQTT Handler: ' + topic + ', message: ' + message);
-    });
-
-    if (this.version < 2.1) {
-      throw new Error('Unexpected API version.');
-    }
-
     if (api) {
+      if (api.version < 2.1) {
+        throw new Error('Unexpected API version.');
+      }
+
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
 
-      this.devices.forEach(device => this.accessories.push(new DreamboxAccessory(log, device, api)));
+      if (config.mqtt) {
+        this.mqttClient = new MQTTClient(log, config);
+      }
+
+      this.devices.forEach(device => this.accessories.push(new DreamboxAccessory(log, device, this)));
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
