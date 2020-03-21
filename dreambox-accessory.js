@@ -6,10 +6,9 @@ var Accessory, Service, Characteristic, UUIDGen;
 const responseDelay = 1500;
 
 class DreamboxAccessory {
-  constructor(log, config, api) {
+  constructor(log, config, platform) {
     this.log = log;
     this.config = config;
-    this.api = api;
 
     if (config === undefined || config === null)
       return;
@@ -29,12 +28,12 @@ class DreamboxAccessory {
     this.log('Initializing Dreambox TV-device: ' + this.name);
 
     // Accessory must be created from PlatformAccessory Constructor
-    Accessory = this.api.platformAccessory;
+    Accessory = platform.api.platformAccessory;
 
     // Service and Characteristic are from hap-nodejs
-    Service = this.api.hap.Service;
-    Characteristic = this.api.hap.Characteristic;
-    UUIDGen = this.api.hap.uuid;
+    Service = platform.api.hap.Service;
+    Characteristic = platform.api.hap.Characteristic;
+    UUIDGen = platform.api.hap.uuid;
 
     // Device Info
     this.manufacturer = 'Dream Multimedia';
@@ -42,13 +41,26 @@ class DreamboxAccessory {
     this.serialNumber = this.hostname;
     this.firmwareRevision = 'FW000345';
 
+    // Setup MQTT subscriptions
+    if (platform.mqttClient) {
+      platform.mqttClient.mqttSubscribe('dreambox/state/power', (topic, message) => {
+        let msg = JSON.parse(message);
+        this.log('MQTT Power: %s', msg.power);
+        this.powerState = (msg.power === 'False');
+      });
+      platform.mqttClient.mqttSubscribe('dreambox/state/channel', (topic, message) => {
+        let msg = JSON.parse(message);
+        this.log('MQTT Channel: %s', msg.name);
+      });
+    }
+
     setTimeout(this.prepareTvService.bind(this), responseDelay);
 
     var deviceName = this.name;
     var uuid = UUIDGen.generate(deviceName);
-    this.tvAccesory = new Accessory(deviceName, uuid, this.api.hap.Accessory.Categories.TV);
+    this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
     this.log('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
-    this.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
+    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   //Prepare TV service
