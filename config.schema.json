@@ -42,6 +42,21 @@
       "mqtt": {
         "title": "Use MQTT to update the dreambox state",
         "type": "boolean"
+      },
+      "mqttBroker": {
+        "title": "MQTT Broker Hostname (default: localhost)",
+        "type": "string",
+        "format": "hostname"
+      },
+      "mqttUsername": {
+        "title": "MQTT Broker Username",
+        "type": "string",
+        "format": "password"
+      },
+      "mqttPpassword": {
+        "title": "MQTT Broker Password",
+        "type": "string",
+        "format": "password"
       }
     }
   },
@@ -72,7 +87,7 @@
           "type": "help",
           "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
-        "mqtt"
+        "mqtt", "mqttBroker", "mqttUsername", "mqttPpassword"
       ]
     }
   ]
