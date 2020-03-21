@@ -53,7 +53,7 @@
         "type": "string",
         "format": "password"
       },
-      "mqttPpassword": {
+      "mqttPassword": {
         "title": "MQTT Broker Password",
         "type": "string",
         "format": "password"
@@ -87,7 +87,7 @@
           "type": "help",
           "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
-        "mqtt", "mqttBroker", "mqttUsername", "mqttPpassword"
+        "mqtt", "mqttBroker", "mqttUsername", "mqttPassword"
       ]
     }
   ]
