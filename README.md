@@ -54,6 +54,8 @@ The plugin adds a dreambox remote in the control center. The play/pause button i
 
 [Enigma2 WebInterface Wiki](https://dream.reichholf.net/wiki/Enigma2:WebInterface)
 
+[OpenWebif API Documentation](https://github.com/E2OpenPlugins/e2openplugin-OpenWebif/wiki/OpenWebif-API-documentation)
+
 [homebridge-sony-television](https://github.com/arnif/homebridge-sony-television)
 
 [homebridge-denon-tv](https://github.com/grzegorz914/homebridge-denon-tv)
