@@ -45,15 +45,15 @@ class DreamboxAccessory {
     if (platform.mqttClient) {
       platform.mqttClient.mqttSubscribe('dreambox/state/power', (topic, message) => {
         let msg = JSON.parse(message);
-        this.log('MQTT Power: %s', msg.power);
-        this.powerState = (msg.power === 'False');
+        this.powerState = (msg.power === 'True');
+        this.log('Device: %s, MQTT Power: %s', this.hostname, this.getPowerStateString());
       });
       platform.mqttClient.mqttSubscribe('dreambox/state/channel', (topic, message) => {
         let msg = JSON.parse(message);
         this.channels.find((channel, index) => {
           if (channel.name === msg.name) {
-            this.log('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, index, channel.name, channel.reference);
             this.channel = index;
+            this.log('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, this.channel, channel.name, channel.reference);
             return true;
           }
         });
@@ -67,6 +67,14 @@ class DreamboxAccessory {
     this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
     this.log('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
     platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
+  }
+
+  getMuteString() {
+    return this.muteState ? 'ON' : 'OFF';
+  }
+
+  getPowerStateString() {
+    return this.powerState ? 'ON' : 'STANDBY';
   }
 
   //Prepare TV service
@@ -209,7 +217,7 @@ class DreamboxAccessory {
       .then(res => {
         if (res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
-          this.log('Device: %s, getPower: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
+          this.log('Device: %s, getPower: %s', this.hostname, this.getPowerStateString());
           callback(null, this.powerState);
         }
       })
@@ -218,20 +226,20 @@ class DreamboxAccessory {
 
   setPowerState(state, callback) {
     this.powerState = state;
-    this.log('Device: %s, setPower: %s', this.hostname, state ? 'ON' : 'STANDBY');
+    this.log('Device: %s, setPower: %s', this.hostname, this.getPowerStateString());
     this.callEnigmaWebAPI('powerstate?newstate=' + (state ? '4' : '5'))
       .then(callback(null, state))
       .catch(err => callback(err));
   }
 
   getMute(callback) {
-    this.log('Device: %s, getMute: %s', this.hostname, this.muteState ? 'ON' : 'OFF');
+    this.log('Device: %s, getMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   setMute(state, callback) {
     this.muteState = state;
-    this.log('Device: %s, setMute: %s', this.hostname, this.muteState ? 'ON' : 'OFF');
+    this.log('Device: %s, setMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
