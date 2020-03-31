@@ -1,6 +1,6 @@
 {
   "name": "homebridge-dreambox",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Control your Dreambox as HomeKit TV-Appliance",
   "main": "index.js",
   "scripts": {
