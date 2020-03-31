@@ -127,6 +127,7 @@ class DreamboxAccessory {
             throw Error(res.statusText);
         })
         .then(body => xml2js.parseStringPromise(body, {
+          trim: true,
           explicitArray: false
         }))
         .then(res => {
