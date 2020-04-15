@@ -10,9 +10,6 @@ class DreamboxPlatform {
     this.devices = this.config.devices || [];
     this.accessories = [];
 
-    // eslint-disable-next-line quotes
-    this.log("DreamboxPlatform Init");
-
     if (this.version < 2.1) {
       throw new Error('Unexpected API version.');
     }
