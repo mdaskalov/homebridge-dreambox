@@ -16,6 +16,7 @@ class DreamboxAccessory {
 
     this.name = config['name'];
     this.hostname = config['hostname'];
+    this.port = config['port'];
     this.username = config['username'];
     this.password = config['password'];
     this.bouquet = config['bouquet'] || 'Favourites (TV)';
