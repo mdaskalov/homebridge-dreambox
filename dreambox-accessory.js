@@ -112,7 +112,7 @@ class DreamboxAccessory {
       const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
 
       if (this.username && this.password) {
-        let auth = Buffer.from(this.username + ':' + this.password);
+        let auth = Buffer.from(encodeURIComponent(this.username) + ':' + encodeURIComponent(this.password));
         var headers = {
           'Authorization': 'Basic ' + auth.toString('base64')
         };
