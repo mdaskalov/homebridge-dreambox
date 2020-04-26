@@ -22,6 +22,12 @@
               "required": true,
               "format": "hostname"
             },
+            "port": {
+              "title": "Port",
+              "type": "integer",
+              "default": 80,
+              "maximum": 65535
+            },
             "username": {
               "title": "Username",
               "type": "string",
@@ -55,6 +61,8 @@
         "key": "devices[].name"
       }, {
         "key": "devices[].hostname"
+      }, {
+        "key": "devices[].port"
       }, {
         "key": "devices[].username"
       }, {
