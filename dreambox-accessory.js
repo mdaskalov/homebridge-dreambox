@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const xml2js = require('xml2js');
+const url = require('url');
 
 var Accessory, Service, Characteristic, UUIDGen;
 
@@ -109,7 +110,12 @@ class DreamboxAccessory {
 
   callEnigmaWebAPI(path, options = {}) {
     return new Promise((resolve, reject) => {
-      const url = 'http://' + encodeURIComponent(this.hostname) + '/web/' + path;
+      const endpoint = url.format({
+        protocol: 'http',
+        hostname: this.hostname,
+        port: this.port,
+        pathname: '/web/' + path
+      });
 
       if (this.username && this.password) {
         let auth = Buffer.from(encodeURIComponent(this.username) + ':' + encodeURIComponent(this.password));
@@ -119,7 +125,7 @@ class DreamboxAccessory {
         options.headers = headers;
       }
 
-      fetch(url, options)
+      fetch(endpoint, options)
         .then(res => {
           if (res.ok)
             return res.text();
