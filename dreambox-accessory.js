@@ -127,20 +127,16 @@ class DreamboxAccessory {
       }
 
       fetch(endpoint, options)
-        .then(res => {
-          if (res.ok)
-            return res.text();
-          else
-            throw Error(res.statusText);
-        })
+        .then(res => res.text())
         .then(body => xml2js.parseStringPromise(body, {
           trim: true,
           explicitArray: false
         }))
-        .then(res => {
-          resolve(res);
-        })
-        .catch(err => reject(err));
+        .then(res => resolve(res))
+        .catch(err => {
+          this.log.error('Device: %s, API Call: %s, Error: ', this.hostname, endpoint, err.message);
+          reject(err);
+        });
     });
   }
 
@@ -161,7 +157,7 @@ class DreamboxAccessory {
                 channel++;
               }
             });
-            this.log('Device: %s, configured %d channel(s)', this.hostname, this.channelReferences.length);
+            this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channelReferences.length);
           }
         }
       })
@@ -208,13 +204,8 @@ class DreamboxAccessory {
     this.callEnigmaWebAPI('powerstate', {
         newstate: (state ? '4' : '5')
       })
-      .then(() => {
-        callback(null, state);
-      })
-      .catch(err => {
-        this.log(err);
-        callback(err);
-      });
+      .then(() => callback(null, state))
+      .catch(err => callback(err));
   }
 
   getMute(callback) {
@@ -267,7 +258,7 @@ class DreamboxAccessory {
     this.callEnigmaWebAPI('zap', {
         sRef: this.channelReferences[this.channel]
       })
-      .then(callback(null, channel))
+      .then(() => callback(null, channel))
       .catch(err => callback(err));
   }
 
@@ -286,7 +277,7 @@ class DreamboxAccessory {
     this.callEnigmaWebAPI('vol', {
         set: command
       })
-      .then(callback(null, remoteKey))
+      .then(() => callback(null, remoteKey))
       .catch(err => callback(err));
   }
 
@@ -311,7 +302,7 @@ class DreamboxAccessory {
     this.callEnigmaWebAPI('remotecontrol', {
         command: command
       })
-      .then(callback(null, remoteKey))
+      .then(() => callback(null, remoteKey))
       .catch(err => callback(err));
   }
 }
