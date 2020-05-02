@@ -38,11 +38,7 @@ class DreamboxAccessory {
     Characteristic = this.api.hap.Characteristic;
     UUIDGen = this.api.hap.uuid;
 
-    // Device Info
-    this.manufacturer = 'Dream Multimedia';
-    this.modelName = 'homebridge-dreambox';
-    this.serialNumber = this.hostname;
-    this.firmwareRevision = 'FW000345';
+    this.getDeviceInfo();
 
     setTimeout(this.prepareTvService.bind(this), responseDelay);
 
@@ -138,6 +134,22 @@ class DreamboxAccessory {
           reject(err);
         });
     });
+  }
+
+  getDeviceInfo() {
+    this.log.debug('Device: %s, getDeviceInfo', this.hostname);
+    this.callEnigmaWebAPI('about')
+      .then(res => {
+        if (res && res.e2abouts && res.e2abouts.e2about) {
+          // Device Info
+          this.manufacturer = 'Dream Multimedia';
+          this.modelName = res.e2abouts.e2about.e2model;
+          this.serialNumber = res.e2abouts.e2about.e2lanmac;
+          this.firmwareRevision = res.e2abouts.e2about.e2enigmaversion;
+
+        }
+      })
+      .catch(err => this.log(err));
   }
 
   prepareTvInputServices() {
