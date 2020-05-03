@@ -11,11 +11,11 @@ class DreamboxPlatform {
     this.devices = this.config.devices || [];
     this.accessories = [];
 
-    if (api) {
-      if (api.version < 2.1) {
-        throw new Error('Unexpected API version.');
-      }
+    if (this.version < 2.1) {
+      throw new Error('Unexpected API version.');
+    }
 
+    if (api) {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
 

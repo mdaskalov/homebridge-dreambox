@@ -24,6 +24,9 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
         {
             "name": "Dreambox",
             "hostname": "dm900",
+            "port": 80,
+            "username": "user",
+            "password": "password",
             "bouquet": "HomekitFavorites"
         }
     ],
@@ -32,13 +35,19 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 `name` - Accessory name to be used in the Home applicaiton. Should be unique.
 
-`hostname` - IP or hostname of your device to be accessible from homebridge.
+`hostname` - IP or hostname of the device.
+
+`port` (optional) - Enigma web interface port. Default `80`.
+
+`username` (optional) - Username used to access the web interface of the device.
+
+`password`(optional) - Password used to access the web interface of the device.
 
 `bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Configure the name as shown in the GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
 
 # Usage
 
-Dreambox devices will be published as external accessory in orderd to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
+Dreambox devices will be published as external accessory in order to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
 
 The plugin adds a dreambox remote in the control center. The play/pause button is used to show the menu. The physical volume buttons control the dreambox volume.
 
@@ -53,6 +62,8 @@ The plugin adds a dreambox remote in the control center. The play/pause button i
 [Enigma2 WebInterface API Documentation](https://dream.reichholf.net/e2web/)
 
 [Enigma2 WebInterface Wiki](https://dream.reichholf.net/wiki/Enigma2:WebInterface)
+
+[OpenWebif API Documentation](https://github.com/E2OpenPlugins/e2openplugin-OpenWebif/wiki/OpenWebif-API-documentation)
 
 [homebridge-sony-television](https://github.com/arnif/homebridge-sony-television)
 
