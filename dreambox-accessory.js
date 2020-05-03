@@ -84,6 +84,14 @@ class DreamboxAccessory {
     this.prepareTvInputServices();
   }
 
+  getMuteString() {
+    return this.muteState ? 'ON' : 'OFF';
+  }
+
+  getPowerStateString() {
+    return this.powerState ? 'ON' : 'STANDBY';
+  }
+
   //Prepare speaker service
   prepereTvSpeakerService() {
     this.log.debug('Device: %s, prepereTvSpeakerService', this.hostname);
@@ -203,7 +211,7 @@ class DreamboxAccessory {
       .then(res => {
         if (res && res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
-          this.log.debug('Device: %s, getPowerState: %s', this.hostname, this.powerState ? 'ON' : 'STANDBY');
+          this.log.debug('Device: %s, getPowerState: %s', this.hostname, this.getPowerStateString());
           callback(null, this.powerState);
         }
       })
@@ -212,7 +220,7 @@ class DreamboxAccessory {
 
   setPowerState(state, callback) {
     this.powerState = state;
-    this.log.debug('Device: %s, setPowerState: %s', this.hostname, state ? 'ON' : 'STANDBY');
+    this.log.debug('Device: %s, setPowerState: %s', this.hostname, this.getPowerStateString());
     this.callEnigmaWebAPI('powerstate', {
         newstate: (state ? '4' : '5')
       })
@@ -221,13 +229,13 @@ class DreamboxAccessory {
   }
 
   getMute(callback) {
-    this.log.debug('Device: %s, get current Mute state successfull: %s', this.hostname, this.muteState ? 'ON' : 'OFF');
+    this.log.debug('Device: %s, get current Mute state successfull: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   setMute(state, callback) {
     this.muteState = state;
-    this.log.debug('Device: %s, set new Mute state successfull: %s', this.hostname, this.muteState ? 'ON' : 'OFF');
+    this.log.debug('Device: %s, set new Mute state successfull: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
