@@ -63,9 +63,9 @@ class DreamboxAccessory {
 
     var deviceName = this.name;
     var uuid = UUIDGen.generate(deviceName);
-    this.tvAccesory = new Accessory(deviceName, uuid, this.api.hap.Accessory.Categories.TV);
+    this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
     this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
-    this.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
+    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   getMuteString() {
@@ -199,7 +199,7 @@ class DreamboxAccessory {
                 channel++;
               }
             });
-            this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channelReferences.length);
+            this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channels.length);
           }
         }
       })
@@ -278,11 +278,13 @@ class DreamboxAccessory {
         .then(res => {
           if (res && res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
             const reference = res.e2currentserviceinformation.e2service.e2servicereference;
-            const channel = this.channelReferences.indexOf(reference);
-            if (channel != -1) {
-              this.log.debug('Device: %s, getChannel: %s, (%s)', this.hostname, channel, reference);
-              this.channel = channel;
+            this.channels.find((channel, index) => {
+              if (channel.reference === reference) {
+                this.log.debug('Device: %s, getChannel: %s :- %s (%s)', this.hostname, index, channel.name, channel.reference);
+                this.channel = index;
+                return true;
             }
+            });
           }
           callback(null, this.channel);
         })
@@ -298,7 +300,7 @@ class DreamboxAccessory {
     this.channel = channel;
     this.log.debug('Device: %s, setChannel: %s', this.hostname, channel);
     this.callEnigmaWebAPI('zap', {
-        sRef: this.channelReferences[this.channel]
+        sRef: this.channels[this.channel].reference
       })
       .then(() => callback(null, channel))
       .catch(err => callback(err));
