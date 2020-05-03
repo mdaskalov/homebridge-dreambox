@@ -27,9 +27,11 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
             "port": 80,
             "username": "user",
             "password": "password",
-            "bouquet": "HomekitFavorites"
+            "bouquet": "HomekitFavorites",
+            "mqttTopic": "dreambox"
         }
     ],
+    "mqtt": true
 }
 ```
 
@@ -44,6 +46,10 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 `password`(optional) - Password used to access the web interface of the device.
 
 `bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Configure the name as shown in the GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
+
+`mqttTopic`(optional) - MQTT topic used to synchronise the power state and current channel with your device. Topics used: `<mqttTopic>/state/power` and `<mqttTopic>/state/channel` 
+
+`mqtt` (optional) - Connect to a MQTT broker and synchronise power and selected channel with it.
 
 # Usage
 

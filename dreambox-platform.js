@@ -1,4 +1,5 @@
 const DreamboxAccessory = require('./dreambox-accessory');
+const MQTTClient = require('./mqtt-client');
 
 class DreamboxPlatform {
   // Platform constructor
@@ -18,7 +19,11 @@ class DreamboxPlatform {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
 
-      this.devices.forEach(device => this.accessories.push(new DreamboxAccessory(log, device, api)));
+      if (config.mqtt) {
+        this.mqttClient = new MQTTClient(log, config);
+      }
+
+      this.devices.forEach(device => this.accessories.push(new DreamboxAccessory(log, device, this)));
 
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.

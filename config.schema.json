@@ -41,6 +41,10 @@
             "bouquet": {
               "title": "Bouquet Name",
               "type": "string"
+            },
+            "mqttTopic": {
+              "title": "MQTT Topic",
+              "type": "string"
             }
           }
         }
@@ -48,6 +52,21 @@
       "mqtt": {
         "title": "Use MQTT to update the dreambox state",
         "type": "boolean"
+      },
+      "mqttBroker": {
+        "title": "MQTT Broker Hostname (default: localhost)",
+        "type": "string",
+        "format": "hostname"
+      },
+      "mqttUsername": {
+        "title": "MQTT Broker Username",
+        "type": "string",
+        "format": "password"
+      },
+      "mqttPassword": {
+        "title": "MQTT Broker Password",
+        "type": "string",
+        "format": "password"
       }
     }
   },
@@ -69,6 +88,8 @@
         "key": "devices[].password"
       }, {
         "key": "devices[].bouquet"
+      }, {
+        "key": "devices[].mqttTopic"
       }]
     },
     {
@@ -80,7 +101,7 @@
           "type": "help",
           "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
-        "mqtt"
+        "mqtt", "mqttBroker", "mqttUsername", "mqttPassword"
       ]
     }
   ]

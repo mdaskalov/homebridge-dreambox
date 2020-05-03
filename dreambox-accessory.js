@@ -7,10 +7,9 @@ var Accessory, Service, Characteristic, UUIDGen;
 const responseDelay = 1500;
 
 class DreamboxAccessory {
-  constructor(log, config, api) {
+  constructor(log, config, platform) {
     this.log = log;
     this.config = config;
-    this.api = api;
 
     if (config === undefined || config === null)
       return;
@@ -26,27 +25,47 @@ class DreamboxAccessory {
     this.muteState = false;
     this.volumeState = 0;
     this.channel = 0;
-    this.channelReferences = [];
+    this.channels = [];
 
     this.log('Configuring %s as external TV accessory %s', this.hostname, this.name);
 
     // Accessory must be created from PlatformAccessory Constructor
-    Accessory = this.api.platformAccessory;
+    Accessory = platform.api.platformAccessory;
 
     // Service and Characteristic are from hap-nodejs
-    Service = this.api.hap.Service;
-    Characteristic = this.api.hap.Characteristic;
-    UUIDGen = this.api.hap.uuid;
+    Service = platform.api.hap.Service;
+    Characteristic = platform.api.hap.Characteristic;
+    UUIDGen = platform.api.hap.uuid;
 
     this.getDeviceInfo();
+
+    // Setup MQTT subscriptions
+    var topic = config['mqttTopic'];
+    if (platform.mqttClient) {
+      platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
+        let msg = JSON.parse(message);
+        this.powerState = (msg.power === 'True');
+        this.log.debug('Device: %s, MQTT Power: %s', this.hostname, this.getPowerStateString());
+      });
+      platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
+        let msg = JSON.parse(message);
+        this.channels.find((channel, index) => {
+          if (channel.name === msg.name) {
+            this.channel = index;
+            this.log.debug('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, this.channel, channel.name, channel.reference);
+            return true;
+          }
+        });
+      });
+    }
 
     setTimeout(this.prepareTvService.bind(this), responseDelay);
 
     var deviceName = this.name;
     var uuid = UUIDGen.generate(deviceName);
-    this.tvAccesory = new Accessory(deviceName, uuid, this.api.hap.Accessory.Categories.TV);
+    this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
     this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
-    this.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
+    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   getMuteString() {
@@ -173,11 +192,14 @@ class DreamboxAccessory {
               const channelReference = service.e2servicereference;
               if (channel < 97 && !channelReference.startsWith('1:64:')) { // Max 97 channels can be used, skip markers
                 this.createInputSource(channelReference, channelName, channel);
-                this.channelReferences.push(channelReference);
+                this.channels.push({
+                  name: service.e2servicename,
+                  reference: channelReference
+                });
                 channel++;
               }
             });
-            this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channelReferences.length);
+            this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channels.length);
           }
         }
       })
@@ -211,7 +233,7 @@ class DreamboxAccessory {
       .then(res => {
         if (res && res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
-          this.log.debug('Device: %s, getPowerState: %s', this.hostname, this.getPowerStateString());
+          this.log.debug('Device: %s, getPower: %s', this.hostname, this.getPowerStateString());
           callback(null, this.powerState);
         }
       })
@@ -220,7 +242,7 @@ class DreamboxAccessory {
 
   setPowerState(state, callback) {
     this.powerState = state;
-    this.log.debug('Device: %s, setPowerState: %s', this.hostname, this.getPowerStateString());
+    this.log.debug('Device: %s, setPower: %s', this.hostname, this.getPowerStateString());
     this.callEnigmaWebAPI('powerstate', {
         newstate: (state ? '4' : '5')
       })
@@ -229,24 +251,24 @@ class DreamboxAccessory {
   }
 
   getMute(callback) {
-    this.log.debug('Device: %s, get current Mute state successfull: %s', this.hostname, this.getMuteString());
+    this.log.debug('Device: %s, getMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   setMute(state, callback) {
     this.muteState = state;
-    this.log.debug('Device: %s, set new Mute state successfull: %s', this.hostname, this.getMuteString());
+    this.log.debug('Device: %s, setMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   getVolume(callback) {
-    this.log.debug('Device: %s, get current Volume level successfull: %s', this.hostname, this.volumeState);
+    this.log.debug('Device: %s, getVolume: %s', this.hostname, this.volumeState);
     callback(null, this.volumeState);
   }
 
   setVolume(volume, callback) {
     this.volumeState = volume;
-    this.log.debug('Device: %s, set new Volume level successfull: %s', this.hostname, this.volumeState);
+    this.log.debug('Device: %s, setVolume: %s', this.hostname, this.volumeState);
     callback(null, this.volumeState);
   }
 
@@ -256,11 +278,13 @@ class DreamboxAccessory {
         .then(res => {
           if (res && res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
             const reference = res.e2currentserviceinformation.e2service.e2servicereference;
-            const channel = this.channelReferences.indexOf(reference);
-            if (channel != -1) {
-              this.log.debug('Device: %s, getChannel: %s, (%s)', this.hostname, channel, reference);
-              this.channel = channel;
-            }
+            this.channels.find((channel, index) => {
+              if (channel.reference === reference) {
+                this.log.debug('Device: %s, getChannel: %s :- %s (%s)', this.hostname, index, channel.name, channel.reference);
+                this.channel = index;
+                return true;
+              }
+            });
           }
           callback(null, this.channel);
         })
@@ -276,14 +300,15 @@ class DreamboxAccessory {
     this.channel = channel;
     this.log.debug('Device: %s, setChannel: %s', this.hostname, channel);
     this.callEnigmaWebAPI('zap', {
-        sRef: this.channelReferences[this.channel]
+        sRef: this.channels[this.channel].reference
       })
       .then(() => callback(null, channel))
       .catch(err => callback(err));
   }
 
   setPowerMode(state, callback) {
-    this.log.debug('Device: %s, set new Power Mode successfull, state: %s', this.hostname, state);
+    this.powerState = state;
+    this.log.debug('Device: %s, setPowerMode: %s', this.hostname, this.getPowerStateString());
     callback(null, state);
   }
 
