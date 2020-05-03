@@ -41,6 +41,10 @@
             "bouquet": {
               "title": "Bouquet Name",
               "type": "string"
+            },
+            "mqttTopic": {
+              "title": "MQTT Topic",
+              "type": "string"
             }
           }
         }
@@ -84,6 +88,8 @@
         "key": "devices[].password"
       }, {
         "key": "devices[].bouquet"
+      }, {
+        "key": "devices[].mqttTopic"
       }]
     },
     {
