@@ -49,6 +49,14 @@ class DreamboxAccessory {
     this.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
+  getMuteString() {
+    return this.muteState ? 'ON' : 'OFF';
+  }
+
+  getPowerStateString() {
+    return this.powerState ? 'ON' : 'STANDBY';
+  }
+
   //Prepare TV service
   prepareTvService() {
     this.log.debug('Device: %s, prepareTvService', this.hostname);
@@ -82,14 +90,6 @@ class DreamboxAccessory {
     this.tvAccesory.addService(this.tvService);
     this.prepereTvSpeakerService();
     this.prepareTvInputServices();
-  }
-
-  getMuteString() {
-    return this.muteState ? 'ON' : 'OFF';
-  }
-
-  getPowerStateString() {
-    return this.powerState ? 'ON' : 'STANDBY';
   }
 
   //Prepare speaker service
