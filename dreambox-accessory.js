@@ -233,7 +233,7 @@ class DreamboxAccessory {
       .then(res => {
         if (res && res.e2powerstate && res.e2powerstate.e2instandby) {
           this.powerState = res.e2powerstate.e2instandby === 'false';
-          this.log.debug('Device: %s, getPowerState: %s', this.hostname, this.getPowerStateString());
+          this.log.debug('Device: %s, getPower: %s', this.hostname, this.getPowerStateString());
           callback(null, this.powerState);
         }
       })
@@ -242,7 +242,7 @@ class DreamboxAccessory {
 
   setPowerState(state, callback) {
     this.powerState = state;
-    this.log.debug('Device: %s, setPowerState: %s', this.hostname, this.getPowerStateString());
+    this.log.debug('Device: %s, setPower: %s', this.hostname, this.getPowerStateString());
     this.callEnigmaWebAPI('powerstate', {
         newstate: (state ? '4' : '5')
       })
@@ -251,24 +251,24 @@ class DreamboxAccessory {
   }
 
   getMute(callback) {
-    this.log.debug('Device: %s, get current Mute state successfull: %s', this.hostname, this.getMuteString());
+    this.log.debug('Device: %s, getMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   setMute(state, callback) {
     this.muteState = state;
-    this.log.debug('Device: %s, set new Mute state successfull: %s', this.hostname, this.getMuteString());
+    this.log.debug('Device: %s, setMute: %s', this.hostname, this.getMuteString());
     callback(null, this.muteState);
   }
 
   getVolume(callback) {
-    this.log.debug('Device: %s, get current Volume level successfull: %s', this.hostname, this.volumeState);
+    this.log.debug('Device: %s, getVolume: %s', this.hostname, this.volumeState);
     callback(null, this.volumeState);
   }
 
   setVolume(volume, callback) {
     this.volumeState = volume;
-    this.log.debug('Device: %s, set new Volume level successfull: %s', this.hostname, this.volumeState);
+    this.log.debug('Device: %s, setVolume: %s', this.hostname, this.volumeState);
     callback(null, this.volumeState);
   }
 
@@ -283,7 +283,7 @@ class DreamboxAccessory {
                 this.log.debug('Device: %s, getChannel: %s :- %s (%s)', this.hostname, index, channel.name, channel.reference);
                 this.channel = index;
                 return true;
-            }
+              }
             });
           }
           callback(null, this.channel);
@@ -307,7 +307,8 @@ class DreamboxAccessory {
   }
 
   setPowerMode(state, callback) {
-    this.log.debug('Device: %s, set new Power Mode successfull, state: %s', this.hostname, state);
+    this.powerState = state;
+    this.log.debug('Device: %s, setPowerMode: %s', this.hostname, this.getPowerStateString());
     callback(null, state);
   }
 
