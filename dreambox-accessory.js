@@ -40,18 +40,19 @@ class DreamboxAccessory {
     this.getDeviceInfo();
 
     // Setup MQTT subscriptions
+    var topic = config['mqttTopic'];
     if (platform.mqttClient) {
-      platform.mqttClient.mqttSubscribe('dreambox/state/power', (topic, message) => {
+      platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
         let msg = JSON.parse(message);
         this.powerState = (msg.power === 'True');
-        this.log('Device: %s, MQTT Power: %s', this.hostname, this.getPowerStateString());
+        this.log.debug('Device: %s, MQTT Power: %s', this.hostname, this.getPowerStateString());
       });
-      platform.mqttClient.mqttSubscribe('dreambox/state/channel', (topic, message) => {
+      platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
         let msg = JSON.parse(message);
         this.channels.find((channel, index) => {
           if (channel.name === msg.name) {
             this.channel = index;
-            this.log('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, this.channel, channel.name, channel.reference);
+            this.log.debug('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, this.channel, channel.name, channel.reference);
             return true;
           }
         });
