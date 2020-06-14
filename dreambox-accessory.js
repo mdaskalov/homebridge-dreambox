@@ -10,6 +10,7 @@ class DreamboxAccessory {
   constructor(log, config, platform) {
     this.log = log;
     this.config = config;
+    this.platform = platform;
 
     if (config === undefined || config === null)
       return;
@@ -60,12 +61,6 @@ class DreamboxAccessory {
     }
 
     setTimeout(this.prepareTvService.bind(this), responseDelay);
-
-    var deviceName = this.name;
-    var uuid = UUIDGen.generate(deviceName);
-    this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
-    this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
-    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   getMuteString() {
@@ -79,25 +74,10 @@ class DreamboxAccessory {
   //Prepare TV service
   prepareTvService() {
     this.log.debug('Device: %s, prepareTvService', this.hostname);
-    this.tvService = new Service.Television(this.name, 'tvService');
-    this.tvService.setCharacteristic(Characteristic.ConfiguredName, this.name);
-    this.tvService.setCharacteristic(Characteristic.SleepDiscoveryMode, Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
 
-    this.tvService.getCharacteristic(Characteristic.Active)
-      .on('get', this.getPowerState.bind(this))
-      .on('set', this.setPowerState.bind(this));
-
-    this.tvService.getCharacteristic(Characteristic.ActiveIdentifier)
-      .on('get', this.getChannel.bind(this))
-      .on('set', (channel, callback) => {
-        this.setChannel(callback, channel);
-      });
-
-    this.tvService.getCharacteristic(Characteristic.RemoteKey)
-      .on('set', this.remoteKeyPress.bind(this));
-
-    this.tvService.getCharacteristic(Characteristic.PowerModeSelection)
-      .on('set', this.setPowerMode.bind(this));
+    var deviceName = this.name;
+    var uuid = UUIDGen.generate(deviceName);
+    this.tvAccesory = new Accessory(deviceName, uuid, this.platform.api.hap.Accessory.Categories.TV);
 
     this.tvAccesory
       .getService(Service.AccessoryInformation)
@@ -106,9 +86,30 @@ class DreamboxAccessory {
       .setCharacteristic(Characteristic.SerialNumber, this.serialNumber)
       .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision);
 
+    this.tvService = new Service.Television(deviceName, 'tvService');
+    this.tvService.setCharacteristic(Characteristic.ConfiguredName, deviceName);
+    this.tvService.setCharacteristic(Characteristic.SleepDiscoveryMode, Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
+
+    this.tvService.getCharacteristic(Characteristic.Active)
+      .on('get', this.getPowerState.bind(this))
+      .on('set', this.setPowerState.bind(this));
+
+    this.tvService.getCharacteristic(Characteristic.ActiveIdentifier)
+      .on('get', this.getChannel.bind(this))
+      .on('set', this.setChannel.bind(this));
+
+    this.tvService.getCharacteristic(Characteristic.RemoteKey)
+      .on('set', this.remoteKeyPress.bind(this));
+
+    this.tvService.getCharacteristic(Characteristic.PowerModeSelection)
+      .on('set', this.setPowerMode.bind(this));
+
     this.tvAccesory.addService(this.tvService);
     this.prepereTvSpeakerService();
     this.prepareTvInputServices();
+
+    this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
+    this.platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   //Prepare speaker service
@@ -296,7 +297,7 @@ class DreamboxAccessory {
       callback(null, this.channel);
   }
 
-  setChannel(callback, channel) {
+  setChannel(channel, callback) {
     this.channel = channel;
     this.log.debug('Device: %s, setChannel: %s', this.hostname, channel);
     this.callEnigmaWebAPI('zap', {
