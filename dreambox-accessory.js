@@ -61,6 +61,12 @@ class DreamboxAccessory {
     }
 
     setTimeout(this.prepareTvService.bind(this), responseDelay);
+
+    var deviceName = this.name;
+    var uuid = UUIDGen.generate(deviceName);
+    this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
+    this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
+    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   getMuteString() {
@@ -76,9 +82,6 @@ class DreamboxAccessory {
     this.log.debug('Device: %s, prepareTvService', this.hostname);
 
     var deviceName = this.name;
-    var uuid = UUIDGen.generate(deviceName);
-    this.tvAccesory = new Accessory(deviceName, uuid, this.platform.api.hap.Accessory.Categories.TV);
-
     this.tvAccesory
       .getService(Service.AccessoryInformation)
       .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
@@ -107,9 +110,6 @@ class DreamboxAccessory {
     this.tvAccesory.addService(this.tvService);
     this.prepereTvSpeakerService();
     this.prepareTvInputServices();
-
-    this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
-    this.platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
   }
 
   //Prepare speaker service
