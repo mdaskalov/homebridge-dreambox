@@ -19,12 +19,6 @@ class DreamboxPlatform {
       // Save the API object as plugin needs to register new accessory via this object
       this.api = api;
 
-      if (config.mqtt) {
-        this.mqttClient = new MQTTClient(log, config);
-      }
-
-      this.devices.forEach(device => this.accessories.push(new DreamboxAccessory(log, device, this)));
-
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
       // Or start discover new accessories.
@@ -36,22 +30,34 @@ class DreamboxPlatform {
   // Developer can configure accessory at here (like setup event handler).
   // Update current value.
   configureAccessory(accessory) {
-    this.log(accessory.displayName, 'Configure Accessory');
-    var platform = this;
+    this.log.debug('configureAccessory');
 
     // Set the accessory to reachable if plugin can currently process the accessory,
     // otherwise set to false and update the reachability later by invoking
     // accessory.updateReachability()
-    accessory.reachable = true;
+    // accessory.reachable = true;
 
     accessory.on('identify', (paired, callback) => {
-      platform.log(accessory.displayName, 'Identify!!!');
+      this.log(accessory.displayName, 'Identify!!!');
       callback();
     });
+
+    this.accessories.push(accessory);
+  }
+
+  removeAccessory(accessory) {
+    this.log.debug('removeAccessory');
+    this.api.unregisterPlatformAccessories('homebridge-dreambox', 'Dreambox', [accessory]);
   }
 
   didFinishLaunching() {
     this.log.debug('didFinishLaunching');
+    if (this.config.mqtt) {
+      this.mqttClient = new MQTTClient(this.log, this.config);
+    }
+    this.devices.forEach(device => {
+      this.accessories.push(new DreamboxAccessory(this.log, device, this));
+    });
   }
 }
 
