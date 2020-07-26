@@ -27,11 +27,11 @@
   },
   "homepage": "https://github.com/mdaskalov/homebridge-dreambox#readme",
   "dependencies": {
-    "mqtt": "^4.0.0",
+    "mqtt": "^4.1.0",
     "node-fetch": "^2.6.0",
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "^7.5.0"
   }
 }
