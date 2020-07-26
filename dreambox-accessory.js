@@ -174,7 +174,6 @@ class DreamboxAccessory {
           this.modelName = res.e2abouts.e2about.e2model;
           this.serialNumber = res.e2abouts.e2about.e2lanmac;
           this.firmwareRevision = res.e2abouts.e2about.e2enigmaversion;
-
         }
       })
       .catch(err => this.log(err));
@@ -184,7 +183,7 @@ class DreamboxAccessory {
     this.log.debug('Device: %s, prepareTvInputServices', this.hostname);
     this.callEnigmaWebAPI('getallservices')
       .then(res => {
-        if (res && res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+        if (res && res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet && Array.isArray(res.e2servicelistrecursive.e2bouquet)) {
           let bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet);
           if (bouquet) {
             var channel = 0;
