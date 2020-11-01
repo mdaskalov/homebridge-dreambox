@@ -49,7 +49,7 @@ class DreamboxPlatform {
   }
 
   channelUUID(channel) {
-    return this.api.hap.uuid.generate(channel.name+channel.ref);
+    return this.api.hap.uuid.generate(channel.name + channel.ref);
   }
 
   setupDevices() {
@@ -85,7 +85,7 @@ class DreamboxPlatform {
               this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
             }
           });
-        }    
+        }
       });
     }
   }
@@ -95,23 +95,24 @@ class DreamboxPlatform {
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
         if (this.deviceUUID(device) === uuid) {
-          used = true;        
-        } 
+          used = true;
+        }
         if (Array.isArray(device.channels)) {
           device.channels.forEach(channel => {
             if (this.channelUUID(channel) === uuid) {
-              used = true;        
+              used = true;
             }
           });
-        }  
+        }
       });
     }
     return used;
   }
 
   cleanupCache() {
+    this.log.debug('CleanupCache...');
     this.accessories.forEach(accessory => {
-      this.log.debug('Accessory UUID:',accessory.UUID);
+      this.log.debug('Accessory UUID:', accessory.UUID, 'Name:', accessory.displayName);
       if (!this.uuidUsed(accessory.UUID)) {
         this.log.info('Removing unused accessory from cache: %s', accessory.displayName);
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
