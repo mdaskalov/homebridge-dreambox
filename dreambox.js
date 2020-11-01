@@ -217,8 +217,8 @@ class Dreambox {
   }
 
   volumeSelectorPress(remoteKey, command, callback) {
-    this.log.debug('Device: %s, volumeSelectorPress: %s, command: %s', this.dreambox.hostname, remoteKey, command);
-    this.dreambox.callEnigmaWebAPI('vol', {
+    this.log.debug('Device: %s, volumeSelectorPress: %s, command: %s', this.hostname, remoteKey, command);
+    this.callEnigmaWebAPI('vol', {
         set: command
       })
       .then(() => callback(null, remoteKey))
@@ -226,8 +226,8 @@ class Dreambox {
   }
 
   remoteKeyPress(remoteKey, command, callback) {
-    this.log.debug('Device: %s, remoteKeyPress: %s, command: %s', this.dreambox.hostname, remoteKey, command);
-    this.dreambox.callEnigmaWebAPI('remotecontrol', {
+    this.log.debug('Device: %s, remoteKeyPress: %s, command: %s', this.hostname, remoteKey, command);
+    this.callEnigmaWebAPI('remotecontrol', {
         command: command
       })
       .then(() => callback(null, remoteKey))
