@@ -42,6 +42,27 @@
               "title": "Bouquet Name",
               "type": "string"
             },
+            "channels": {
+              "title": "Channel Buttons",
+              "expandable": true,
+              "expanded": false,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "title": "Name",
+                    "type": "string",
+                    "required": true
+                  },
+                  "ref": {
+                    "title": "Reference",
+                    "type": "string",
+                    "required": true
+                  }
+                }
+              }
+            },
             "mqttTopic": {
               "title": "MQTT Topic",
               "type": "string"
@@ -88,6 +109,28 @@
         "key": "devices[].password"
       }, {
         "key": "devices[].bouquet"
+      }, {
+        "key": "devices[].channels",
+        "buttonText": "Add Channel",
+        "items": [{
+          "type": "div",
+          "displayFlex": false,
+          "items": [{
+            "type": "flex",
+            "flex-flow": "row wrap",
+            "items": [{
+                "type": "flex",
+                "flex-flow": "column",
+                "items": ["devices[].channels[].name"]
+              },
+              {
+                "type": "flex",
+                "flex-flow": "column",
+                "items": ["devices[].channels[].ref"]
+              }
+            ]
+          }]
+        }]
       }, {
         "key": "devices[].mqttTopic"
       }]
