@@ -196,12 +196,16 @@ class Dreambox {
       callback(null, this.channel);
   }
 
+  setChannelByRef(ref) {
+    return this.callEnigmaWebAPI('zap', {
+      sRef: ref
+    });
+  }
+
   setChannel(channel, callback) {
     this.channel = channel;
     this.log.debug('Device: %s, setChannel: %s', this.hostname, channel);
-    this.callEnigmaWebAPI('zap', {
-        sRef: this.channels[this.channel].reference
-      })
+    this.setChannelByRef(this.channels[this.channel].reference)
       .then(() => callback(null, channel))
       .catch(err => callback(err));
   }
