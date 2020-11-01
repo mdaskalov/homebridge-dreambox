@@ -48,7 +48,7 @@ class DreamboxPlatform {
   }
 
   channelUUID(channel) {
-    return this.api.hap.uuid.generate(channel.ref);
+    return this.api.hap.uuid.generate(channel.name+channel.ref);
   }
 
   setupDevices() {
