@@ -4,7 +4,6 @@ const url = require('url');
 
 class Dreambox {
   constructor(platform, device) {
-    this.platform = platform;
     this.log = platform.log;
 
     this.powerState = false;
@@ -21,6 +20,9 @@ class Dreambox {
     this.password = device['password'];
     this.bouquet = device['bouquet'] || 'Favourites (TV)';
 
+    this.mqttPowerHandler = undefined;
+    this.mqttChannelHandler = undefined;
+
     this.getDeviceInfo();
 
     // Setup MQTT subscriptions
@@ -30,6 +32,9 @@ class Dreambox {
         let msg = JSON.parse(message);
         this.powerState = (msg.power === 'True');
         this.log.debug('Device: %s, MQTT Power: %s', this.hostname, this.getPowerStateString());
+        if (this.mqttPowerHandler) {
+          this.mqttPowerHandler(this.powerState);
+        }
       });
       platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
         let msg = JSON.parse(message);
@@ -37,12 +42,22 @@ class Dreambox {
           if (channel.name === msg.name) {
             this.channel = index;
             this.log.debug('Device: %s, MQTT Channel: %s :- %s (%s)', this.hostname, this.channel, channel.name, channel.reference);
+            if (this.mqttChannelHandler) {
+              this.mqttChannelHandler(this.channel);
+            }
             return true;
           }
         });
       });
     }
+  }
 
+  setMQTTPowerHandler(handler) {
+    this.mqttPowerHandler = handler;
+  }
+
+  setMQTTChannelHandler(handler) {
+    this.mqttChannelHandler = handler;
   }
 
   getMuteString() {

@@ -54,6 +54,14 @@ class DreamboxAccessory {
     this.tvService.getCharacteristic(Characteristic.PowerModeSelection)
       .on('set', this.dreambox.setPowerMode.bind(this.dreambox));
 
+    this.dreambox.setMQTTPowerHandler((power) => {
+      this.tvService.updateCharacteristic(Characteristic.Active, power);
+    });
+
+    this.dreambox.setMQTTChannelHandler((channel) => {
+      this.tvService.updateCharacteristic(Characteristic.ActiveIdentifier, channel);
+    });
+
     this.tvAccesory.addService(this.tvService);
     this.prepereTvSpeakerService();
     this.prepareTvInputServices();
