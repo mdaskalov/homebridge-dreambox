@@ -2,25 +2,21 @@ const fetch = require('node-fetch');
 const xml2js = require('xml2js');
 const url = require('url');
 
-var Accessory, Service, Characteristic, UUIDGen;
+var Accessory, Service, Characteristic;
 
 const responseDelay = 1500;
 
 class DreamboxAccessory {
-  constructor(log, config, platform) {
-    this.log = log;
-    this.config = config;
+  constructor(platform, accessory) {
     this.platform = platform;
+    this.log = platform.log;
 
-    if (config === undefined || config === null)
-      return;
-
-    this.name = config['name'];
-    this.hostname = config['hostname'];
-    this.port = config['port'];
-    this.username = config['username'];
-    this.password = config['password'];
-    this.bouquet = config['bouquet'] || 'Favourites (TV)';
+    this.name = accessory.context.device['name'];
+    this.hostname = accessory.context.device['hostname'];
+    this.port = accessory.context.device['port'];
+    this.username = accessory.context.device['username'];
+    this.password = accessory.context.device['password'];
+    this.bouquet = accessory.context.device['bouquet'] || 'Favourites (TV)';
 
     this.powerState = false;
     this.muteState = false;
@@ -28,7 +24,7 @@ class DreamboxAccessory {
     this.channel = 0;
     this.channels = [];
 
-    this.log('Configuring %s as external TV accessory %s', this.hostname, this.name);
+    this.log.debug('Configuring %s as external TV accessory %s', this.hostname, this.name);
 
     // Accessory must be created from PlatformAccessory Constructor
     Accessory = platform.api.platformAccessory;
@@ -36,13 +32,12 @@ class DreamboxAccessory {
     // Service and Characteristic are from hap-nodejs
     Service = platform.api.hap.Service;
     Characteristic = platform.api.hap.Characteristic;
-    UUIDGen = platform.api.hap.uuid;
 
     this.getDeviceInfo();
 
     // Setup MQTT subscriptions
-    var topic = config['mqttTopic'];
-    if (platform.mqttClient) {
+    var topic = accessory.context.device['mqttTopic'];
+    if (platform.mqttClient && topic) {
       platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
         let msg = JSON.parse(message);
         this.powerState = (msg.power === 'True');
@@ -59,11 +54,10 @@ class DreamboxAccessory {
         });
       });
     }
-
     setTimeout(this.prepareTvService.bind(this), responseDelay);
 
     var deviceName = this.name;
-    var uuid = UUIDGen.generate(deviceName);
+    var uuid = platform.deviceUUID(accessory.context.device);
     this.tvAccesory = new Accessory(deviceName, uuid, platform.api.hap.Accessory.Categories.TV);
     this.log.debug('Device: %s, publishExternalAccessories: %s', this.hostname, this.name);
     platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
