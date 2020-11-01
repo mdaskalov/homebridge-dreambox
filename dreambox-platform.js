@@ -1,5 +1,6 @@
 const DreamboxAccessory = require('./dreambox-accessory');
 const ChannelAccessory = require('./channel-accessory');
+const Dreambox = require('./dreambox');
 const MQTTClient = require('./mqtt-client');
 
 const PLUGIN_NAME = 'homebridge-dreambox';
@@ -54,20 +55,18 @@ class DreamboxPlatform {
   setupDevices() {
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
-        const uuid = this.deviceUUID(device);
-        const existingDevice = this.accessories.find(a => a.UUID === uuid);
+        const dreambox = new Dreambox(this, device);
+        const existingDevice = this.accessories.find(a => a.UUID === dreambox.uuid);
         if (existingDevice) {
-          this.log.info('Restoring existing device accessory from cache: %s', device.name);
-          existingDevice.context.device = device;
+          this.log.info('Restoring existing device accessory from cache: %s', dreambox.name);
           this.api.updatePlatformAccessories([existingDevice]);
-          new DreamboxAccessory(this, existingDevice);
         } else {
-          this.log.info('Adding new device accessory: %s', device.name);
-          const accessory = new this.api.platformAccessory(device.name, uuid);
-          accessory.context.device = device;
-          new DreamboxAccessory(this, accessory);
+          this.log.info('Adding new device accessory: %s', dreambox.name);
+          const accessory = new this.api.platformAccessory(dreambox.name, dreambox.uuid);
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
+
+        new DreamboxAccessory(this, dreambox);
 
         if (Array.isArray(device.channels)) {
           device.channels.forEach(channel => {
