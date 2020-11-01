@@ -42,7 +42,7 @@ class Dreambox {
         });
       });
     }
-    
+
   }
 
   getMuteString() {
@@ -85,6 +85,34 @@ class Dreambox {
     });
   }
 
+  getAllChannels() {
+    return new Promise((resolve, reject) => {
+      this.callEnigmaWebAPI('getallservices')
+        .then(res => {
+          if (res && res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+            let bouquet = res.e2servicelistrecursive.e2bouquet;
+            if (Array.isArray(bouquet)) {
+              bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
+            }
+            if (bouquet) {
+              bouquet.e2servicelist.e2service.forEach(service => {
+                const channelReference = service.e2servicereference;
+                if (!channelReference.startsWith('1:64:')) { // Skip markers
+                  this.channels.push({
+                    name: service.e2servicename,
+                    reference: channelReference
+                  });
+                }
+              });
+              this.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channels.length);
+              resolve(this.channels);
+            }
+          }
+        })
+        .catch(reject);
+    });
+  }
+
   getDeviceInfo() {
     this.log.debug('Device: %s, getDeviceInfo', this.hostname);
     this.callEnigmaWebAPI('about')
@@ -98,6 +126,108 @@ class Dreambox {
         }
       })
       .catch(err => this.log(err));
+  }
+
+  getPowerState(callback) {
+    this.callEnigmaWebAPI('powerstate')
+      .then(res => {
+        if (res && res.e2powerstate && res.e2powerstate.e2instandby) {
+          this.powerState = res.e2powerstate.e2instandby === 'false';
+          this.log.debug('Device: %s, getPower: %s', this.hostname, this.getPowerStateString());
+          callback(null, this.powerState);
+        }
+      })
+      .catch(err => callback(err));
+  }
+
+  setPowerState(state, callback) {
+    this.powerState = state;
+    this.log.debug('Device: %s, setPower: %s', this.hostname, this.getPowerStateString());
+    this.callEnigmaWebAPI('powerstate', {
+        newstate: (state ? '4' : '5')
+      })
+      .then(() => callback(null, state))
+      .catch(err => callback(err));
+  }
+
+  getMute(callback) {
+    this.log.debug('Device: %s, getMute: %s', this.hostname, this.getMuteString());
+    callback(null, this.muteState);
+  }
+
+  setMute(state, callback) {
+    this.muteState = state;
+    this.log.debug('Device: %s, setMute: %s', this.hostname, this.getMuteString());
+    callback(null, this.muteState);
+  }
+
+  getVolume(callback) {
+    this.log.debug('Device: %s, getVolume: %s', this.hostname, this.volumeState);
+    callback(null, this.volumeState);
+  }
+
+  setVolume(volume, callback) {
+    this.volumeState = volume;
+    this.log.debug('Device: %s, setVolume: %s', this.hostname, this.volumeState);
+    callback(null, this.volumeState);
+  }
+
+  getChannel(callback) {
+    if (this.powerState) {
+      this.callEnigmaWebAPI('getcurrent')
+        .then(res => {
+          if (res && res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
+            const reference = res.e2currentserviceinformation.e2service.e2servicereference;
+            this.channels.find((channel, index) => {
+              if (channel.reference === reference) {
+                this.log.debug('Device: %s, getChannel: %s :- %s (%s)', this.hostname, index, channel.name, channel.reference);
+                this.channel = index;
+                return true;
+              }
+            });
+          }
+          callback(null, this.channel);
+        })
+        .catch(err => {
+          this.log(err);
+          callback(err);
+        });
+    } else
+      callback(null, this.channel);
+  }
+
+  setChannel(channel, callback) {
+    this.channel = channel;
+    this.log.debug('Device: %s, setChannel: %s', this.hostname, channel);
+    this.callEnigmaWebAPI('zap', {
+        sRef: this.channels[this.channel].reference
+      })
+      .then(() => callback(null, channel))
+      .catch(err => callback(err));
+  }
+
+  setPowerMode(state, callback) {
+    this.powerState = state;
+    this.log.debug('Device: %s, setPowerMode: %s', this.hostname, this.getPowerStateString());
+    callback(null, state);
+  }
+
+  volumeSelectorPress(remoteKey, command, callback) {
+    this.log.debug('Device: %s, volumeSelectorPress: %s, command: %s', this.dreambox.hostname, remoteKey, command);
+    this.dreambox.callEnigmaWebAPI('vol', {
+        set: command
+      })
+      .then(() => callback(null, remoteKey))
+      .catch(err => callback(err));
+  }
+
+  remoteKeyPress(remoteKey, command, callback) {
+    this.log.debug('Device: %s, remoteKeyPress: %s, command: %s', this.dreambox.hostname, remoteKey, command);
+    this.dreambox.callEnigmaWebAPI('remotecontrol', {
+        command: command
+      })
+      .then(() => callback(null, remoteKey))
+      .catch(err => callback(err));
   }
 
 }
