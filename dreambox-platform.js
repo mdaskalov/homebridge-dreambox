@@ -69,42 +69,51 @@ class DreamboxPlatform {
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
 
-      });
-    }
-
-    if (Array.isArray(this.config.channels)) {
-      this.config.channels.forEach(channel => {
-        const uuid = this.channelUUID(channel);
-        const existingChannel = this.accessories.find(a => a.UUID === uuid);
-        if (existingChannel) {
-          this.log.info('Restoring existing channel accessory from cache: %s', channel.name);
-          existingChannel.context.channel = channel;
-          this.api.updatePlatformAccessories([existingChannel]);
-          new ChannelAccessory(this, existingChannel);
-        } else {
-          this.log.info('Adding new channel accessory: %s', channel.name);
-          const accessory = new this.api.platformAccessory(channel.name, uuid);
-          accessory.context.channel = channel;
-          new ChannelAccessory(this, accessory);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        }
+        if (Array.isArray(device.channels)) {
+          device.channels.forEach(channel => {
+            const uuid = this.channelUUID(channel);
+            const existingChannel = this.accessories.find(a => a.UUID === uuid);
+            if (existingChannel) {
+              this.log.info('Restoring existing channel accessory from cache: %s', channel.name);
+              existingChannel.context.channel = channel;
+              this.api.updatePlatformAccessories([existingChannel]);
+              new ChannelAccessory(this, existingChannel);
+            } else {
+              this.log.info('Adding new channel accessory: %s', channel.name);
+              const accessory = new this.api.platformAccessory(channel.name, uuid);
+              accessory.context.channel = channel;
+              new ChannelAccessory(this, accessory);
+              this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            }
+          });
+        }    
       });
     }
   }
 
+  uuidUsed(uuid) {
+    var used = false;
+    if (Array.isArray(this.config.devices)) {
+      this.config.devices.forEach(device => {
+        if (this.deviceUUID(device) === uuid) {
+          used = true;        
+        } 
+        if (Array.isArray(device.channels)) {
+          device.channels.forEach(channel => {
+            if (this.channelUUID(channel) === uuid) {
+              used = true;        
+            }
+          });
+        }  
+      });
+    }
+    return used;
+  }
+
   cleanupCache() {
     this.accessories.forEach(accessory => {
-      let foundDevice = false;
-      let foundChannel = false;
-      if (Array.isArray(this.config.devices)) {
-        const found = this.config.devices.find(d => this.deviceUUID(d) === accessory.UUID);
-        foundDevice = (found !== undefined);
-      }
-      if (Array.isArray(this.config.channels)) {
-        const found = this.config.channels.find(d => this.channelUUID(d) === accessory.UUID);
-        foundChannel = (found !== undefined);
-      }
-      if (!foundDevice && !foundChannel) {
+      this.log.debug('Accessory UUID:',accessory.UUID);
+      if (!this.uuidUsed(accessory.UUID)) {
         this.log.info('Removing unused accessory from cache: %s', accessory.displayName);
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
