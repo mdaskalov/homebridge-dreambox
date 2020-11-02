@@ -28,10 +28,19 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
             "username": "user",
             "password": "password",
             "bouquet": "HomekitFavorites",
+            "channels":[
+                {
+                    "name": "arte HD",
+                    "ref": "1:0:19:283E:3FB:1:C00000:0:0:0:"
+                }
+            ],
             "mqttTopic": "dreambox"
         }
     ],
-    "mqtt": true
+    "mqtt": true,
+    "mqttBroker": "localhost",
+    "mqttUsername": "root",
+    "mqttPassword": "secret"
 }
 ```
 
@@ -47,7 +56,13 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 `bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Configure the name shown in the dreambox GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
 
-`mqttTopic`(optional) - MQTT topic used to synchronise the power state and current channel with your device. Topics used: `<mqttTopic>/state/power` and `<mqttTopic>/state/channel`. Example accepted messages:
+`channels` (optional) - Channels to be added as separate buttons
+    
+`name` - Unique channel name
+
+`ref` - Channel reference as in the bouquet file
+
+`mqttTopic`(optional) - MQTT device topic used to synchronise the power state and current channel with your device. Topics used: `<mqttTopic>/state/power` and `<mqttTopic>/state/channel`. Example accepted messages:
 ```
 dreambox/state/power
 {"powerstate": "On", "power": "True"}
@@ -57,14 +72,23 @@ dreambox/state/channel
 {"is_crypted": "False", "epg_now_endtime": "12:30", "epg_next_title": "Einer von uns: Der Homo sapiens (2/5)", "epg_now_starttime": "11:35", "name": "arte HD", "epg_now_rest_sec": 1200, "pic": "", "epg_now_title": "Einer von uns: Der Homo sapiens (1/5)", "epg_now_duration": 3300, "epg_next_endtime": "13:30", "file_size": 0, "epg_next_starttime": "12:30", "provider": "ARD", "epg_next_duration": 3600, "epg_now_rest_min": 20, "epg_now_startendtime": "11:35 - 12:30", "epg_now_rest_proz": 63, "epg_next_startendtime": "12:30 - 13:30"}
 ```
 
-
 `mqtt` (optional) - Connect to a MQTT broker and synchronise power and selected channel with it.
+
+`mqttBroker` (optional) - MQTT broker hostname if not localhost
+
+`mqttUsername` (optional) - Username to connect to the MQTT broker
+
+`mqttPassword` (optional) - Password to connect to the MQTT broker
 
 # Usage
 
 Dreambox devices will be published as external accessory in order to be visible even if another plugin on the same homebridge instance has published TV-Appliances. Please add all devices manually in the Home app using the setup code written in log.
 
 The plugin adds a dreambox remote in the control center. The play/pause button is used to show the menu. The physical volume buttons control the dreambox volume.
+
+You can define channel buttons to switch directly to the configured channel when pressed.
+
+If configured a MQTT broker can be used to synchronize the device status with Homebridge.
 
 # References
 

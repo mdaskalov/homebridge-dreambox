@@ -4,6 +4,7 @@
   "description": "Control your Dreambox as HomeKit TV-Appliance",
   "main": "index.js",
   "scripts": {
+    "watch": "npm link && nodemon",
     "test": "node index.js && echo \"No syntax errors! (node $(node -v))\""
   },
   "repository": {
@@ -32,6 +33,7 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "eslint": "^7.8.1"
+    "eslint": "^7.8.1",
+    "nodemon": "^2.0.4"
   }
 }

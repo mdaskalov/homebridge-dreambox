@@ -1,14 +1,20 @@
 const DreamboxAccessory = require('./dreambox-accessory');
+const ChannelAccessory = require('./channel-accessory');
+const Dreambox = require('./dreambox');
 const MQTTClient = require('./mqtt-client');
+
+const PLUGIN_NAME = 'homebridge-dreambox';
+const PLATFORM_NAME = 'Dreambox';
 
 class DreamboxPlatform {
   // Platform constructor
   // config may be null
   // api may be null if launched from old homebridge version
   constructor(log, config, api) {
+    this.Service = api.hap.Service;
+    this.Characteristic = api.hap.Characteristic;
     this.log = log;
     this.config = config || {};
-    this.devices = this.config.devices || [];
     this.accessories = [];
 
     if (this.version < 2.1) {
@@ -22,43 +28,84 @@ class DreamboxPlatform {
       // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
       // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
       // Or start discover new accessories.
-      this.api.on('didFinishLaunching', this.didFinishLaunching.bind(this));
+      this.api.on('didFinishLaunching', () => {
+        this.log.debug('didFinishLaunching...');
+        if (this.config.mqtt) {
+          this.mqttClient = new MQTTClient(this.log, this.config);
+        }
+        this.setupDevices();
+        this.cleanupCache();
+      });
     }
   }
 
   // Function invoked when homebridge tries to restore cached accessory.
-  // Developer can configure accessory at here (like setup event handler).
-  // Update current value.
   configureAccessory(accessory) {
-    this.log.debug('configureAccessory');
-
-    // Set the accessory to reachable if plugin can currently process the accessory,
-    // otherwise set to false and update the reachability later by invoking
-    // accessory.updateReachability()
-    // accessory.reachable = true;
-
-    accessory.on('identify', (paired, callback) => {
-      this.log(accessory.displayName, 'Identify!!!');
-      callback();
-    });
-
     this.accessories.push(accessory);
   }
 
-  removeAccessory(accessory) {
-    this.log.debug('removeAccessory');
-    this.api.unregisterPlatformAccessories('homebridge-dreambox', 'Dreambox', [accessory]);
+  channelUUID(channel) {
+    return this.api.hap.uuid.generate(channel.name + channel.ref);
   }
 
-  didFinishLaunching() {
-    this.log.debug('didFinishLaunching');
-    if (this.config.mqtt) {
-      this.mqttClient = new MQTTClient(this.log, this.config);
+  setupDevices() {
+    if (Array.isArray(this.config.devices)) {
+      this.config.devices.forEach(device => {
+        const dreambox = new Dreambox(this, device);
+        new DreamboxAccessory(this, dreambox);
+        if (Array.isArray(device.channels)) {
+          device.channels.forEach(channel => {
+            const uuid = this.channelUUID(channel);
+            const existingChannel = this.accessories.find(a => a.UUID === uuid);
+            if (existingChannel) {
+              this.log.info('Restoring existing channel accessory from cache: %s', channel.name);
+              existingChannel.context.channel = channel;
+              this.api.updatePlatformAccessories([existingChannel]);
+              new ChannelAccessory(this, existingChannel, dreambox);
+            } else {
+              this.log.info('Adding new channel accessory: %s', channel.name);
+              const accessory = new this.api.platformAccessory(channel.name, uuid);
+              accessory.context.channel = channel;
+              new ChannelAccessory(this, accessory, dreambox);
+              this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            }
+          });
+        }
+      });
     }
-    this.devices.forEach(device => {
-      this.accessories.push(new DreamboxAccessory(this.log, device, this));
+  }
+
+  uuidUsed(uuid) {
+    var used = false;
+    if (Array.isArray(this.config.devices)) {
+      this.config.devices.forEach(device => {
+        if (Array.isArray(device.channels)) {
+          device.channels.forEach(channel => {
+            if (this.channelUUID(channel) === uuid) {
+              used = true;
+            }
+          });
+        }
+      });
+    }
+    return used;
+  }
+
+  cleanupCache() {
+    this.log.debug('CleanupCache...');
+    this.accessories.forEach(accessory => {
+      this.log.debug('Accessory UUID:', accessory.UUID, 'Name:', accessory.displayName);
+      if (!this.uuidUsed(accessory.UUID)) {
+        this.log.info('Removing unused accessory from cache: %s', accessory.displayName);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+      }
     });
   }
+
 }
 
-module.exports = DreamboxPlatform;
+module.exports = {
+  PLUGIN_NAME,
+  PLATFORM_NAME,
+  DreamboxPlatform
+};
