@@ -12,13 +12,14 @@ class Dreambox {
     this.channel = 0;
     this.channels = [];
 
-    this.uuid = platform.deviceUUID(device);
+
     this.name = device['name'];
     this.hostname = device['hostname'];
     this.port = device['port'];
     this.username = device['username'];
     this.password = device['password'];
     this.bouquet = device['bouquet'] || 'Favourites (TV)';
+    this.uuid = platform.api.hap.uuid.generate(this.hostname + ':' + this.name);
 
     this.mqttPowerHandler = undefined;
     this.mqttChannelHandler = undefined;

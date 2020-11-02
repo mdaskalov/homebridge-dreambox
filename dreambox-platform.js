@@ -44,10 +44,6 @@ class DreamboxPlatform {
     this.accessories.push(accessory);
   }
 
-  deviceUUID(device) {
-    return this.api.hap.uuid.generate(device.hostname);
-  }
-
   channelUUID(channel) {
     return this.api.hap.uuid.generate(channel.name + channel.ref);
   }
@@ -56,18 +52,7 @@ class DreamboxPlatform {
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
         const dreambox = new Dreambox(this, device);
-        const existingDevice = this.accessories.find(a => a.UUID === dreambox.uuid);
-        if (existingDevice) {
-          this.log.info('Restoring existing device accessory from cache: %s', dreambox.name);
-          this.api.updatePlatformAccessories([existingDevice]);
-        } else {
-          this.log.info('Adding new device accessory: %s', dreambox.name);
-          const accessory = new this.api.platformAccessory(dreambox.name, dreambox.uuid);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        }
-
         new DreamboxAccessory(this, dreambox);
-
         if (Array.isArray(device.channels)) {
           device.channels.forEach(channel => {
             const uuid = this.channelUUID(channel);
@@ -94,9 +79,6 @@ class DreamboxPlatform {
     var used = false;
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
-        if (this.deviceUUID(device) === uuid) {
-          used = true;
-        }
         if (Array.isArray(device.channels)) {
           device.channels.forEach(channel => {
             if (this.channelUUID(channel) === uuid) {
