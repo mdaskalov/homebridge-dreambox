@@ -1,6 +1,4 @@
-var Accessory, Service, Characteristic;
-
-const responseDelay = 1500;
+var Service, Characteristic;
 
 class DreamboxAccessory {
   constructor(platform, dreambox) {
@@ -11,32 +9,39 @@ class DreamboxAccessory {
 
     this.log.debug('Configuring %s as external TV accessory %s', this.dreambox.hostname, this.dreambox.name);
 
-    // Accessory must be created from PlatformAccessory Constructor
-    Accessory = platform.api.platformAccessory;
-
     // Service and Characteristic are from hap-nodejs
     Service = platform.api.hap.Service;
     Characteristic = platform.api.hap.Characteristic;
 
-    setTimeout(this.prepareTvService.bind(this), responseDelay);
+    this.tvAccessory = new platform.api.platformAccessory(this.dreambox.name, this.dreambox.uuid);
+    this.tvAccessory.category = platform.api.hap.Categories.TELEVISION;
 
-    this.tvAccesory = new Accessory(this.dreambox.name, this.dreambox.uuid, platform.api.hap.Accessory.Categories.TV);
+    this.prepareTvService();
+    this.prepereTvSpeakerService();
+    this.prepareTvInputServices();
+
     this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
-    platform.api.publishExternalAccessories('homebridge-dreambox', [this.tvAccesory]);
+    platform.api.publishExternalAccessories(platform.PLUGIN_NAME, [this.tvAccessory]);
+
+    this.dreambox.getDeviceInfo((err, res) => {
+      if (err) {
+        this.log.error(err);
+      } else {
+        this.tvAccessory
+          .getService(Service.AccessoryInformation)
+          .setCharacteristic(Characteristic.Manufacturer, 'Dream Multimedia')
+          .setCharacteristic(Characteristic.Model, res.modelName)
+          .setCharacteristic(Characteristic.SerialNumber, res.serialNumber)
+          .setCharacteristic(Characteristic.FirmwareRevision, res.firmwareRevision);
+      }
+    });
   }
 
-  //Prepare TV service
+  //Prepare TV service  
   prepareTvService() {
     this.log.debug('Device: %s, prepareTvService', this.dreambox.hostname);
 
-    this.tvAccesory
-      .getService(Service.AccessoryInformation)
-      .setCharacteristic(Characteristic.Manufacturer, this.dreambox.manufacturer)
-      .setCharacteristic(Characteristic.Model, this.dreambox.modelName)
-      .setCharacteristic(Characteristic.SerialNumber, this.dreambox.serialNumber)
-      .setCharacteristic(Characteristic.FirmwareRevision, this.dreambox.firmwareRevision);
-
-    this.tvService = new Service.Television(this.dreambox.name, 'tvService');
+    this.tvService = this.tvAccessory.addService(Service.Television);
     this.tvService.setCharacteristic(Characteristic.ConfiguredName, this.dreambox.name);
     this.tvService.setCharacteristic(Characteristic.SleepDiscoveryMode, Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
 
@@ -61,16 +66,12 @@ class DreamboxAccessory {
     this.dreambox.setMQTTChannelHandler((channel) => {
       this.tvService.updateCharacteristic(Characteristic.ActiveIdentifier, channel);
     });
-
-    this.tvAccesory.addService(this.tvService);
-    this.prepereTvSpeakerService();
-    this.prepareTvInputServices();
   }
 
   //Prepare speaker service
   prepereTvSpeakerService() {
     this.log.debug('Device: %s, prepereTvSpeakerService', this.dreambox.hostname);
-    this.tvSpeakerService = new Service.TelevisionSpeaker(this.dreambox.name, 'tvSpeakerService');
+    this.tvSpeakerService = this.tvAccessory.addService(Service.TelevisionSpeaker);
     this.tvSpeakerService
       .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(Characteristic.VolumeControlType, Characteristic.VolumeControlType.ABSOLUTE);
@@ -82,9 +83,6 @@ class DreamboxAccessory {
     this.tvSpeakerService.getCharacteristic(Characteristic.Mute)
       .on('get', this.dreambox.getMute.bind(this.dreambox))
       .on('set', this.dreambox.setMute.bind(this.dreambox));
-
-    this.tvAccesory.addService(this.tvSpeakerService);
-    this.tvService.addLinkedService(this.tvSpeakerService);
   }
 
   prepareTvInputServices() {
@@ -105,7 +103,7 @@ class DreamboxAccessory {
   }
 
   createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
-    var input = new Service.InputSource(reference, name);
+    const input = this.tvAccessory.addService(Service.InputSource, reference, name);
     input
       .setCharacteristic(Characteristic.Identifier, number)
       .setCharacteristic(Characteristic.ConfiguredName, name)
@@ -113,17 +111,13 @@ class DreamboxAccessory {
       .setCharacteristic(Characteristic.InputSourceType, sourceType)
       .setCharacteristic(Characteristic.InputDeviceType, deviceType)
       .setCharacteristic(Characteristic.CurrentVisibilityState, Characteristic.CurrentVisibilityState.SHOWN);
-
     input
       .getCharacteristic(Characteristic.ConfiguredName)
       .on('set', (name, callback) => {
         this.log.debug('Device: %s, saved new channel successfull, name: %s, reference: %s', this.dreambox.hostname, name, reference);
         callback();
       });
-
-    this.tvAccesory.addService(input);
-    if (!input.linked)
-      this.tvService.addLinkedService(input);
+    this.tvService.addLinkedService(input);
   }
 
   volumeSelectorPress(remoteKey, callback) {
