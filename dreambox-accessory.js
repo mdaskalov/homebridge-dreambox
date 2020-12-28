@@ -1,5 +1,9 @@
 var Service, Characteristic;
 
+const {
+  PLUGIN_NAME
+} = require('./settings');
+
 class DreamboxAccessory {
   constructor(platform, dreambox) {
     this.platform = platform;
@@ -21,7 +25,7 @@ class DreamboxAccessory {
     this.prepareTvInputServices();
 
     this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
-    platform.api.publishExternalAccessories(platform.PLUGIN_NAME, [this.tvAccessory]);
+    platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
 
     this.dreambox.getDeviceInfo((err, res) => {
       if (err) {

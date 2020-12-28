@@ -1,8 +1,8 @@
+const DreamboxPlatform = require('./dreambox-platform');
 const {
   PLUGIN_NAME,
-  PLATFORM_NAME,
-  DreamboxPlatform
-} = require('./dreambox-platform');
+  PLATFORM_NAME
+} = require('./settings');
 
 module.exports = homebridge => {
   // For platform plugin to be considered as dynamic platform plugin,

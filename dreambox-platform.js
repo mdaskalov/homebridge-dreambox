@@ -2,9 +2,10 @@ const DreamboxAccessory = require('./dreambox-accessory');
 const ChannelAccessory = require('./channel-accessory');
 const Dreambox = require('./dreambox');
 const MQTTClient = require('./mqtt-client');
-
-const PLUGIN_NAME = 'homebridge-dreambox';
-const PLATFORM_NAME = 'Dreambox';
+const {
+  PLUGIN_NAME,
+  PLATFORM_NAME
+} = require('./settings');
 
 class DreamboxPlatform {
   // Platform constructor
@@ -37,6 +38,10 @@ class DreamboxPlatform {
         this.cleanupCache();
       });
     }
+  }
+
+  static pluginName() {
+    return 'XX';
   }
 
   // Function invoked when homebridge tries to restore cached accessory.
@@ -104,8 +109,4 @@ class DreamboxPlatform {
 
 }
 
-module.exports = {
-  PLUGIN_NAME,
-  PLATFORM_NAME,
-  DreamboxPlatform
-};
+module.exports = DreamboxPlatform;
