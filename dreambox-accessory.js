@@ -22,23 +22,25 @@ class DreamboxAccessory {
 
     this.prepareTvService();
     this.prepereTvSpeakerService();
-    this.prepareTvInputServices();
-
-    this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
-    platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
-
-    this.dreambox.getDeviceInfo((err, res) => {
-      if (err) {
-        this.log.error(err);
-      } else {
-        this.tvAccessory
-          .getService(Service.AccessoryInformation)
-          .setCharacteristic(Characteristic.Manufacturer, 'Dream Multimedia')
-          .setCharacteristic(Characteristic.Model, res.modelName)
-          .setCharacteristic(Characteristic.SerialNumber, res.serialNumber)
-          .setCharacteristic(Characteristic.FirmwareRevision, res.firmwareRevision);
-      }
-    });
+    this.prepareTvInputServices()
+      .then( channels => {
+        this.log.debug('Device: %s, prepared %s channels.', this.dreambox.hostname, channels);
+        this.dreambox.getDeviceInfo((err, res) => {
+          if (err) {
+            this.log.error(err);
+          } else {
+            this.tvAccessory
+              .getService(Service.AccessoryInformation)
+              .setCharacteristic(Characteristic.Manufacturer, 'Dream Multimedia')
+              .setCharacteristic(Characteristic.Model, res.modelName)
+              .setCharacteristic(Characteristic.SerialNumber, res.serialNumber)
+              .setCharacteristic(Characteristic.FirmwareRevision, res.firmwareRevision);
+            this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
+            platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);          
+          }
+        });
+      })
+      .catch(err => this.log.error(err));
   }
 
   //Prepare TV service  
@@ -90,23 +92,27 @@ class DreamboxAccessory {
   }
 
   prepareTvInputServices() {
-    this.log.debug('Device: %s, prepareTvInputServices', this.dreambox.hostname);
-    this.dreambox.getAllChannels()
-      .then(channels => {
-        var channel = 0;
-        channels.forEach(ch => {
-          const channelName = String(channel + 1).padStart(2, '0') + '. ' + ch.name;
-          const channelReference = ch.reference;
-          if (channel < 97) { // Max 97 channels can be used
-            this.createInputSource(channelReference, channelName, channel);
-            channel++;
-          }
-        });
-      })
-      .catch(err => this.log(err));
+    return new Promise( (resolve, reject) => {
+        this.log.debug('Device: %s, prepareTvInputServices', this.dreambox.hostname);
+        this.dreambox.getAllChannels()
+          .then(channels => {
+            var channel = 0;
+            channels.forEach(ch => {
+              const channelName = String(channel + 1).padStart(2, '0') + '. ' + ch.name;
+              const channelReference = ch.reference;
+              if (channel < 97) { // Max 97 channels can be used
+                this.createInputSource(channelReference, channelName, channel);
+                channel++;
+              }
+            });
+            resolve(channel);
+          })
+          .catch(err => reject(err));
+    });
   }
 
   createInputSource(reference, name, number, sourceType = Characteristic.InputSourceType.HDMI, deviceType = Characteristic.InputDeviceType.TV) {
+    this.log.debug('Device: %s, createInputSource :- %s', this.dreambox.hostname, name);
     const input = this.tvAccessory.addService(Service.InputSource, reference, name);
     input
       .setCharacteristic(Characteristic.Identifier, number)
