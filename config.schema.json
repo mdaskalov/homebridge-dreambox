@@ -6,7 +6,7 @@
     "type": "object",
     "properties": {
       "devices": {
-        "title": "Dreambox Devices",
+        "title": "{{idx}} Device",
         "type": "array",
         "items": {
           "type": "object",
@@ -43,10 +43,11 @@
               "type": "string"
             },
             "channels": {
-              "title": "Channel Buttons",
+              "title": "Button",
               "expandable": true,
               "expanded": false,
               "type": "array",
+              "default": [],
               "items": {
                 "type": "object",
                 "properties": {
@@ -92,48 +93,31 @@
     }
   },
   "layout": [{
-      "nodescription": true,
-      "notitle": true,
-      "key": "devices",
-      "title": "{{ 'Device ' + $index}}",
       "type": "tabarray",
-      "items": [{
-        "key": "devices[].name"
-      }, {
-        "key": "devices[].hostname"
-      }, {
-        "key": "devices[].port"
-      }, {
-        "key": "devices[].username"
-      }, {
-        "key": "devices[].password"
-      }, {
-        "key": "devices[].bouquet"
-      }, {
-        "key": "devices[].channels",
-        "buttonText": "Add Channel",
-        "items": [{
-          "type": "div",
-          "displayFlex": false,
-          "items": [{
-            "type": "flex",
-            "flex-flow": "row wrap",
-            "items": [{
-                "type": "flex",
-                "flex-flow": "column",
-                "items": ["devices[].channels[].name"]
-              },
-              {
-                "type": "flex",
-                "flex-flow": "column",
-                "items": ["devices[].channels[].ref"]
-              }
+      "items": {
+        "nodescription": true,
+        "notitle": true,
+        "legend": "{{idx}}. Device",
+        "type": "section",
+        "items": [
+          "devices[].name",
+          "devices[].hostname",
+          "devices[].port",
+          "devices[].username",
+          "devices[].password",
+          "devices[].bouquet",
+          {
+            "title": "Channel Buttons",
+            "buttonText": "Add Button",
+            "type": "array",
+            "items": [
+              "devices[].channels[].name",
+              "devices[].channels[].ref"
             ]
-          }]
-        }]
-      }, {
-        "key": "devices[].mqttTopic"
-      }]
+          },
+          "devices[].mqttTopic"
+        ]
+      }
     },
     {
       "type": "fieldset",
