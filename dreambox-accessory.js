@@ -18,12 +18,12 @@ class DreamboxAccessory {
     Characteristic = platform.api.hap.Characteristic;
 
     this.tvAccessory = new platform.api.platformAccessory(this.dreambox.name, this.dreambox.uuid);
-    this.tvAccessory.category = platform.api.hap.Categories.TELEVISION;
+    this.tvAccessory.category = platform.config.deviceType !== undefined ? platform.api.hap.Categories[platform.config.deviceType] : platform.api.hap.Categories.TV_SET_TOP_BOX;
 
     this.prepareTvService();
     this.prepereTvSpeakerService();
     this.prepareTvInputServices()
-      .then( channels => {
+      .then(channels => {
         this.log.debug('Device: %s, prepared %s channels.', this.dreambox.hostname, channels);
         this.dreambox.getDeviceInfo((err, res) => {
           if (err) {
@@ -35,8 +35,9 @@ class DreamboxAccessory {
               .setCharacteristic(Characteristic.Model, res.modelName)
               .setCharacteristic(Characteristic.SerialNumber, res.serialNumber)
               .setCharacteristic(Characteristic.FirmwareRevision, res.firmwareRevision);
+            this.log('here you go.');
             this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
-            platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);          
+            platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
           }
         });
       })
@@ -92,22 +93,22 @@ class DreamboxAccessory {
   }
 
   prepareTvInputServices() {
-    return new Promise( (resolve, reject) => {
-        this.log.debug('Device: %s, prepareTvInputServices', this.dreambox.hostname);
-        this.dreambox.getAllChannels()
-          .then(channels => {
-            var channel = 0;
-            channels.forEach(ch => {
-              const channelName = String(channel + 1).padStart(2, '0') + '. ' + ch.name;
-              const channelReference = ch.reference;
-              if (channel < 97) { // Max 97 channels can be used
-                this.createInputSource(channelReference, channelName, channel);
-                channel++;
-              }
-            });
-            resolve(channel);
-          })
-          .catch(err => reject(err));
+    return new Promise((resolve, reject) => {
+      this.log.debug('Device: %s, prepareTvInputServices', this.dreambox.hostname);
+      this.dreambox.getAllChannels()
+        .then(channels => {
+          var channel = 0;
+          channels.forEach(ch => {
+            const channelName = String(channel + 1).padStart(2, '0') + '. ' + ch.name;
+            const channelReference = ch.reference;
+            if (channel < 97) { // Max 97 channels can be used
+              this.createInputSource(channelReference, channelName, channel);
+              channel++;
+            }
+          });
+          resolve(channel);
+        })
+        .catch(err => reject(err));
     });
   }
 
