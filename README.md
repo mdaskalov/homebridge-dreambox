@@ -37,6 +37,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
             "mqttTopic": "dreambox"
         }
     ],
+    "deviceType": "TV_SET_TOP_BOX",
     "mqtt": true,
     "mqttBroker": "localhost",
     "mqttUsername": "root",
@@ -71,6 +72,8 @@ dreambox/state/power
 dreambox/state/channel
 {"is_crypted": "False", "epg_now_endtime": "12:30", "epg_next_title": "Einer von uns: Der Homo sapiens (2/5)", "epg_now_starttime": "11:35", "name": "arte HD", "epg_now_rest_sec": 1200, "pic": "", "epg_now_title": "Einer von uns: Der Homo sapiens (1/5)", "epg_now_duration": 3300, "epg_next_endtime": "13:30", "file_size": 0, "epg_next_starttime": "12:30", "provider": "ARD", "epg_next_duration": 3600, "epg_now_rest_min": 20, "epg_now_startendtime": "11:35 - 12:30", "epg_now_rest_proz": 63, "epg_next_startendtime": "12:30 - 13:30"}
 ```
+
+`deviceType` (optional) - HomeKit device type (default: `TV_SET_TOP_BOX`) possible values: `TV_STREAMING_STICK`, `AUDIO_RECEIVER`, `TELEVISION`, etc.
 
 `mqtt` (optional) - Connect to a MQTT broker and synchronise power and selected channel with it.
 
