@@ -35,7 +35,6 @@ class DreamboxAccessory {
               .setCharacteristic(Characteristic.Model, res.modelName)
               .setCharacteristic(Characteristic.SerialNumber, res.serialNumber)
               .setCharacteristic(Characteristic.FirmwareRevision, res.firmwareRevision);
-            this.log('here you go.');
             this.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
             platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
           }
