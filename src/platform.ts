@@ -1,22 +1,27 @@
-const DreamboxAccessory = require('./dreambox-accessory');
-const ChannelAccessory = require('./channel-accessory');
-const Dreambox = require('./dreambox');
-const MQTTClient = require('./mqtt-client');
-const {
-  PLUGIN_NAME,
-  PLATFORM_NAME
-} = require('./settings');
+import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
-class DreamboxPlatform {
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { DreamboxAccessory } from './dreambox-accessory';
+import { ChannelAccessory } from './ChannelAccessory';
+import { Dreambox } from './dreambox';
+import { MQTTClient } from './mqtt-client';
+
+
+export class DreamboxPlatform implements DynamicPlatformPlugin {
+  public readonly Service: typeof Service = this.api.hap.Service;
+  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+  public mqttClient?: MQTTClient;
+  public readonly accessories: PlatformAccessory[] = [];
+
+
   // Platform constructor
   // config may be null
   // api may be null if launched from old homebridge version
-  constructor(log, config, api) {
-    this.Service = api.hap.Service;
-    this.Characteristic = api.hap.Characteristic;
-    this.log = log;
-    this.config = config || {};
-    this.accessories = [];
+  constructor(
+    public readonly log: Logger,
+    public readonly config: PlatformConfig,
+    public readonly api: API,
+  ) {
 
     if (this.version < 2.1) {
       throw new Error('Unexpected API version.');
@@ -81,7 +86,7 @@ class DreamboxPlatform {
   }
 
   uuidUsed(uuid) {
-    var used = false;
+    let used = false;
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
         if (Array.isArray(device.channels)) {
@@ -108,5 +113,3 @@ class DreamboxPlatform {
   }
 
 }
-
-module.exports = DreamboxPlatform;
