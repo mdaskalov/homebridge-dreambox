@@ -1,11 +1,16 @@
-class ChannelAccessory {
+import { PlatformAccessory, Service } from 'homebridge';
+import { DreamboxPlatform } from './platform';
+import { Dreambox } from './dreambox';
 
-  constructor(platform, accessory, dreambox) {
-    this.platform = platform;
-    this.log = platform.log;
-    this.dreambox = dreambox;
+export class ChannelAccessory {
+  protected service: Service;
+  private name: string;
+  private reference: string;
+
+  constructor(protected readonly platform: DreamboxPlatform, protected readonly accessory: PlatformAccessory, private dreambox: Dreambox) {
     this.name = accessory.context.channel.name;
     this.reference = accessory.context.channel.ref;
+
     this.service = accessory.getService(platform.Service.Switch) || accessory.addService(platform.Service.Switch);
     this.service.setCharacteristic(platform.Characteristic.Name, accessory.context.channel.name);
 
@@ -16,14 +21,14 @@ class ChannelAccessory {
 
   setState(value, callback) {
     callback(null, 1);
-    this.log.debug('Set Channel:', this.name, 'Reference:', this.reference);
+    this.platform.log.debug('Set Channel:', this.name, 'Reference:', this.reference);
     this.dreambox.setChannelByRef(this.reference)
       .then(() => {
         this.service.updateCharacteristic(this.platform.Characteristic.On, 0);
       })
       .catch(err => {
         this.service.updateCharacteristic(this.platform.Characteristic.On, 0);
-        this.log(err);
+        this.platform.log.error(err);
       });
   }
 
@@ -31,5 +36,3 @@ class ChannelAccessory {
     callback(null, 0);
   }
 }
-
-module.exports = ChannelAccessory;
