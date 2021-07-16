@@ -1,4 +1,4 @@
-import { PlatformAccessory, Characteristic, Service } from 'homebridge';
+import { PlatformAccessory, Service, CharacteristicValue } from 'homebridge';
 import { DreamboxPlatform } from './platform';
 import { Dreambox } from './dreambox';
 import { PLUGIN_NAME } from './settings';
@@ -27,62 +27,55 @@ export class DreamboxAccessory {
         break;
     }
 
-    this.tvService = this.prepareTvService();
-    this.prepereTvSpeakerService();
-    this.prepareTvInputServices()
-      .then(channels => {
-        this.platform.log.debug('Device: %s, prepared %s channels.', this.dreambox.hostname, channels);
-        this.dreambox.getDeviceInfo((err, res) => {
-          if (err) {
-            this.platform.log.error(err);
-          } else if (this.tvAccessory !== undefined) {
-            this.tvAccessory
-              .getService(this.platform.Service.AccessoryInformation)!
-              .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Dream Multimedia')
-              .setCharacteristic(this.platform.Characteristic.Model, res.modelName)
-              .setCharacteristic(this.platform.Characteristic.SerialNumber, res.serialNumber)
-              .setCharacteristic(this.platform.Characteristic.FirmwareRevision, res.firmwareRevision);
-            this.platform.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
-            platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
-          }
-        });
-      })
-      .catch(err => this.platform.log.error(err));
+    this.tvService = this.tvAccessory.addService(this.platform.Service.Television);
+    this.prepareServices();
   }
 
-  //Prepare TV service
-  prepareTvService(): Service {
+  async prepareServices() {
+    this.prepareTvService();
+    this.prepereTvSpeakerService();
+    const channels = await this.prepareTvInputServices();
+    this.platform.log.debug('Device: %s, prepared %s channels.', this.dreambox.hostname, channels);
+    const deviceInfo = await this.dreambox.getDeviceInfo();
+    this.tvAccessory
+      .getService(this.platform.Service.AccessoryInformation)!
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Dream Multimedia')
+      .setCharacteristic(this.platform.Characteristic.Model, deviceInfo.modelName)
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, deviceInfo.serialNumber)
+      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, deviceInfo.firmwareRevision);
+    this.platform.log.debug('Device: %s, publishExternalAccessories: %s', this.dreambox.hostname, this.dreambox.name);
+    this.platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
+  }
+
+  prepareTvService() {
     this.platform.log.debug('Device: %s, prepareTvService', this.dreambox.hostname);
 
-    const tvService = this.tvAccessory.addService(this.platform.Service.Television);
-    tvService.setCharacteristic(this.platform.Characteristic.ConfiguredName, this.dreambox.name);
-    tvService.setCharacteristic(this.platform.Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
+    this.tvService.setCharacteristic(this.platform.Characteristic.ConfiguredName, this.dreambox.name);
+    this.tvService.setCharacteristic(this.platform.Characteristic.SleepDiscoveryMode, this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE);
 
-    tvService.getCharacteristic(this.platform.Characteristic.Active)
-      .on('get', this.dreambox.getPowerState.bind(this.dreambox))
-      .on('set', this.dreambox.setPowerState.bind(this.dreambox));
+    this.tvService.getCharacteristic(this.platform.Characteristic.Active)
+      .onGet(async () => await this.dreambox.getPowerState())
+      .onSet(async value => await this.dreambox.setPowerState(value as boolean));
 
-    tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
-      .on('get', this.dreambox.getChannel.bind(this.dreambox))
-      .on('set', this.dreambox.setChannel.bind(this.dreambox));
+    this.tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
+      .onGet(async () => await this.dreambox.getChannel())
+      .onSet(async value => await this.dreambox.setChannel(value as number));
 
-    tvService.getCharacteristic(this.platform.Characteristic.RemoteKey)
-      .on('set', this.remoteKeyPress.bind(this));
+    this.tvService.getCharacteristic(this.platform.Characteristic.RemoteKey)
+      .onSet(this.remoteKeyPress.bind(this));
 
-    tvService.getCharacteristic(this.platform.Characteristic.PowerModeSelection)
-      .on('set', this.dreambox.setPowerMode.bind(this.dreambox));
+    this.tvService.getCharacteristic(this.platform.Characteristic.PowerModeSelection)
+      .onSet(value => this.dreambox.powerState = value as boolean);
 
     this.dreambox.setMQTTPowerHandler((power) => {
-      tvService.updateCharacteristic(this.platform.Characteristic.Active, power);
+      this.tvService.updateCharacteristic(this.platform.Characteristic.Active, power);
     });
 
     this.dreambox.setMQTTChannelHandler((channel) => {
-      tvService.updateCharacteristic(this.platform.Characteristic.ActiveIdentifier, channel);
+      this.tvService.updateCharacteristic(this.platform.Characteristic.ActiveIdentifier, channel);
     });
-    return tvService;
   }
 
-  //Prepare speaker service
   prepereTvSpeakerService() {
     this.platform.log.debug('Device: %s, prepereTvSpeakerService', this.dreambox.hostname);
     const tvSpeakerService = this.tvAccessory.addService(this.platform.Service.TelevisionSpeaker);
@@ -90,13 +83,13 @@ export class DreamboxAccessory {
       .setCharacteristic(this.platform.Characteristic.Active, this.platform.Characteristic.Active.ACTIVE)
       .setCharacteristic(this.platform.Characteristic.VolumeControlType, this.platform.Characteristic.VolumeControlType.ABSOLUTE);
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.VolumeSelector)
-      .on('set', this.volumeSelectorPress.bind(this));
+      .onSet(this.volumeSelectorPress.bind(this));
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.Volume)
-      .on('get', this.dreambox.getVolume.bind(this.dreambox))
-      .on('set', this.dreambox.setVolume.bind(this.dreambox));
+      .onGet(() => this.dreambox.volumeState)
+      .onSet(value => this.dreambox.volumeState = value as number);
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.Mute)
-      .on('get', this.dreambox.getMute.bind(this.dreambox))
-      .on('set', this.dreambox.setMute.bind(this.dreambox));
+      .onGet(() => this.dreambox.muteState)
+      .onSet(value => this.dreambox.muteState = value as boolean);
   }
 
   prepareTvInputServices() {
@@ -131,23 +124,13 @@ export class DreamboxAccessory {
       .setCharacteristic(this.platform.Characteristic.CurrentVisibilityState, this.platform.Characteristic.CurrentVisibilityState.SHOWN);
     input
       .getCharacteristic(this.platform.Characteristic.ConfiguredName)
-      .on('set', (name, callback) => {
+      .onSet(async name => {
         this.platform.log.debug('Device: %s, saved new channel successfull, name: %s, reference: %s', this.dreambox.hostname, name, reference);
-        callback();
       });
     this.tvService.addLinkedService(input);
   }
 
-  volumeSelectorPress(remoteKey, callback) {
-    const commands = new Map([
-      [this.platform.Characteristic.VolumeSelector.INCREMENT, 'up'],
-      [this.platform.Characteristic.VolumeSelector.DECREMENT, 'down'],
-    ]);
-    const command = commands.get(remoteKey) || '';
-    this.dreambox.volumeSelectorPress(remoteKey, command, callback);
-  }
-
-  remoteKeyPress(remoteKey, callback) {
+  async remoteKeyPress(remoteKey: CharacteristicValue) {
     const commands = new Map([
       [this.platform.Characteristic.RemoteKey.REWIND, 168],
       [this.platform.Characteristic.RemoteKey.FAST_FORWARD, 159],
@@ -163,7 +146,17 @@ export class DreamboxAccessory {
       [this.platform.Characteristic.RemoteKey.PLAY_PAUSE, 139],
       [this.platform.Characteristic.RemoteKey.INFORMATION, 358],
     ]);
-    const command = commands.get(remoteKey) || 0;
-    this.dreambox.remoteKeyPress(remoteKey, command, callback);
+    const command = commands.get(remoteKey as number) || 0;
+    await this.dreambox.remoteKeyPress(command);
   }
+
+  async volumeSelectorPress(volumeSelector: CharacteristicValue) {
+    const commands = new Map([
+      [this.platform.Characteristic.VolumeSelector.INCREMENT, 'up'],
+      [this.platform.Characteristic.VolumeSelector.DECREMENT, 'down'],
+    ]);
+    const command = commands.get(volumeSelector as number) || '';
+    await this.dreambox.volumeSelectorPress(command);
+  }
+
 }
