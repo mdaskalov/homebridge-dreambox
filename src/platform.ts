@@ -1,11 +1,9 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { DreamboxAccessory } from './dreambox-accessory';
-import { ChannelAccessory } from './ChannelAccessory';
+import { ChannelAccessory } from './channel-accessory';
 import { Dreambox } from './dreambox';
 import { MQTTClient } from './mqtt-client';
-
 
 export class DreamboxPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
@@ -13,48 +11,27 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
   public mqttClient?: MQTTClient;
   public readonly accessories: PlatformAccessory[] = [];
 
-
-  // Platform constructor
-  // config may be null
-  // api may be null if launched from old homebridge version
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-
-    if (this.version < 2.1) {
-      throw new Error('Unexpected API version.');
-    }
-
-    if (api) {
-      // Save the API object as plugin needs to register new accessory via this object
-      this.api = api;
-
-      // Listen to event "didFinishLaunching", this means homebridge already finished loading cached accessories.
-      // Platform Plugin should only register new accessory that doesn't exist in homebridge after this event.
-      // Or start discover new accessories.
-      this.api.on('didFinishLaunching', () => {
-        this.log.debug('didFinishLaunching...');
-        if (this.config.mqtt) {
-          this.mqttClient = new MQTTClient(this.log, this.config);
-        }
-        this.setupDevices();
-        this.cleanupCache();
-      });
-    }
+    this.log.debug('Finished initializing platform:', this.config.name);
+    this.api.on('didFinishLaunching', () => {
+      this.log.debug('didFinishLaunching...');
+      if (this.config.mqtt) {
+        this.mqttClient = new MQTTClient(this.log, this.config);
+      }
+      this.setupDevices();
+      this.cleanupCache();
+    });
   }
 
-  static pluginName() {
-    return 'XX';
-  }
-
-  // Function invoked when homebridge tries to restore cached accessory.
-  configureAccessory(accessory) {
+  configureAccessory(accessory: PlatformAccessory) {
     this.accessories.push(accessory);
   }
 
-  channelUUID(channel) {
+  channelUUID(channel): string {
     return this.api.hap.uuid.generate(channel.name + channel.ref);
   }
 
@@ -85,7 +62,7 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
     }
   }
 
-  uuidUsed(uuid) {
+  uuidUsed(uuid: string): boolean {
     let used = false;
     if (Array.isArray(this.config.devices)) {
       this.config.devices.forEach(device => {
@@ -102,14 +79,16 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
   }
 
   cleanupCache() {
-    this.log.debug('CleanupCache...');
-    this.accessories.forEach(accessory => {
-      this.log.debug('Accessory UUID:', accessory.UUID, 'Name:', accessory.displayName);
-      if (!this.uuidUsed(accessory.UUID)) {
-        this.log.info('Removing unused accessory from cache: %s', accessory.displayName);
-        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      }
-    });
+    if (Array.isArray(this.accessories)) {
+      this.log.debug('CleanupCache...');
+      this.accessories.forEach(accessory => {
+        this.log.debug('Accessory UUID:', accessory.UUID, 'Name:', accessory.displayName);
+        if (!this.uuidUsed(accessory.UUID)) {
+          this.log.info('Removing unused accessory from cache: %s', accessory.displayName);
+          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        }
+      });
+    }
   }
 
 }
