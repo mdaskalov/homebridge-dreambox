@@ -11,7 +11,7 @@ type Handler = {
 
 export class MQTTClient {
   private mqttClient: MqttClient;
-  private mqttDispatch: Array<Handler> = [];
+  private messageHandlers: Array<Handler> = [];
 
   constructor(private log: Logger, private config: PlatformConfig) {
     const options = {
@@ -33,22 +33,21 @@ export class MQTTClient {
 
     this.mqttClient.on('message', (topic, message) => {
       this.log.debug('MQTT Received: %s :- %s', topic, message);
-      const handlers = this.mqttDispatch[topic];
-      if (handlers) {
-        handlers.forEach(handler => handler(topic, message));
-      } else {
-        this.log.warn('Warning: No MQTT dispatch handler for topic [' + topic + ']');
-      }
+      const handlers = this.messageHandlers.filter(h => h.topic === topic);
+      handlers.forEach(h => h.callback(topic, message.toString()));
     });
 
     this.log.debug('MQTT Client initialized');
   }
 
-  mqttSubscribe(topic: string, handler: Handler) {
+  mqttSubscribe(topic: string, callback: HandlerCallback) {
     if (this.mqttClient) {
       this.log.debug('MQTT Subscribed: %s', topic);
-      this.mqttDispatch[topic] = [handler];
-      this.mqttClient.subscribe(topic);
+      this.messageHandlers.push({ topic, callback });
+      const handlersCount = this.messageHandlers.filter(h => h.topic === topic).length;
+      if (handlersCount === 1) {
+        this.mqttClient.subscribe(topic); // subscribe once
+      }
     }
   }
 }
