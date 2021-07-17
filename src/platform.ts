@@ -16,14 +16,13 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.log.debug('Finished initializing platform:', this.config.name);
     this.api.on('didFinishLaunching', () => {
-      this.log.debug('didFinishLaunching...');
       if (this.config.mqtt) {
         this.mqttClient = new MQTTClient(this.log, this.config);
       }
       this.setupDevices();
       this.cleanupCache();
+      this.log.debug('Finished initialization');
     });
   }
 
