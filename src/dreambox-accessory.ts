@@ -67,13 +67,13 @@ export class DreamboxAccessory {
     this.tvService.getCharacteristic(this.platform.Characteristic.PowerModeSelection)
       .onSet(value => this.dreambox.powerState = value as boolean);
 
-    this.dreambox.setMQTTPowerHandler((power) => {
-      this.tvService.updateCharacteristic(this.platform.Characteristic.Active, power);
-    });
+    this.dreambox.mqttPowerHandler = power => {
+      this.tvService.getCharacteristic(this.platform.Characteristic.Active).updateValue(power);
+    };
 
-    this.dreambox.setMQTTChannelHandler((channel) => {
-      this.tvService.updateCharacteristic(this.platform.Characteristic.ActiveIdentifier, channel);
-    });
+    this.dreambox.mqttChannelHandler = channel => {
+      this.tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier).updateValue(channel);
+    };
   }
 
   prepereTvSpeakerService() {
