@@ -1,9 +1,7 @@
 import { DreamboxPlatform } from './platform';
 import { parseStringPromise } from 'xml2js';
-import { format } from 'url';
+import { URL, URLSearchParams } from 'url';
 import fetch from 'node-fetch';
-import { RequestInit } from 'node-fetch';
-import { ParsedUrlQueryInput } from 'querystring';
 
 export type DreamboxChannel = {
   name: string,
@@ -39,8 +37,8 @@ export class Dreambox {
   private password: string;
   private bouquet: string;
 
-  private mqttPowerHandler?: PowerHandlerCallback;
-  private mqttChannelHandler?: ChannelHandlerCallback;
+  public mqttPowerHandler?: PowerHandlerCallback;
+  public mqttChannelHandler?: ChannelHandlerCallback;
 
   constructor(protected readonly platform: DreamboxPlatform, protected readonly device) {
     this.name = device['name'];
@@ -58,87 +56,64 @@ export class Dreambox {
       platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
         const msg = JSON.parse(message);
         this.powerState = (msg.power === 'True');
-        this.log('MQTT Power: %s', this.getPowerStateString());
+        this.platform.log.debug('MQTT Power: %s', this.powerState ? 'ON' : 'STANDBY');
         if (this.mqttPowerHandler) {
           this.mqttPowerHandler(this.powerState);
         }
       });
       platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
         const msg = JSON.parse(message);
-        this.channels.find((channel, index) => {
-          if (channel.name === msg.name) {
-            this.channel = index;
-            this.log('MQTT Channel: %s :- %s (%s)', this.channel, channel.name, channel.reference);
-            if (this.mqttChannelHandler) {
-              this.mqttChannelHandler(this.channel);
-            }
-            return true;
+        const index = this.channels.findIndex(channel => channel.name === msg.name);
+        if (index !== -1) {
+          this.channel = index;
+          this.platform.log.debug('MQTT Channel: %s', this.getCurrentChannel());
+          if (this.mqttChannelHandler) {
+            this.mqttChannelHandler(this.channel);
           }
-        });
+          return true;
+        }
       });
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  log(message: string, ...parameters: any[]) {
-    this.platform.log.debug('Device: %s, ' + message,
-      this.hostname,
-      ...parameters,
-    );
-  }
-
-  setMQTTPowerHandler(handler) {
-    this.mqttPowerHandler = handler;
-  }
-
-  setMQTTChannelHandler(handler) {
-    this.mqttChannelHandler = handler;
-  }
-
-  getMuteString(): string {
-    return this.muteState ? 'ON' : 'OFF';
-  }
-
-  getPowerStateString(): string {
-    return this.powerState ? 'ON' : 'STANDBY';
+  getCurrentChannel(): string {
+    if (typeof this.channels[this.channel] === 'undefined') {
+      return 'no channel with index: ' + this.channel;
+    } else {
+      const name = this.channels[this.channel].name;
+      const reference = this.channels[this.channel].reference;
+      return this.channel + ' :- ' + name + ' (' + reference + ')';
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  callEnigmaWebAPI(path: string, query: string | ParsedUrlQueryInput | null | undefined = null, options: RequestInit = {}): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const endpoint = format({
-        protocol: 'http',
-        hostname: this.hostname,
-        port: this.port,
-        pathname: '/web/' + path,
-        query: query,
-      });
+  async callEnigmaWebAPI(path: string, searchParams: URLSearchParams | undefined = undefined): Promise<any> {
+    const url = new URL('/web/' + path, 'http://' + this.hostname);
+    if (this.username && this.password) {
+      url.username = this.username;
+      url.password = this.password;
+    }
+    if (url.port !== undefined) {
+      url.port = this.port;
+    }
+    if (searchParams !== undefined) {
+      url.search = searchParams.toString();
+    }
 
-      if (this.username && this.password) {
-        const auth = Buffer.from(encodeURIComponent(this.username) + ':' + encodeURIComponent(this.password));
-        const headers = {
-          'Authorization': 'Basic ' + auth.toString('base64'),
-        };
-        options.headers = headers;
-      }
+    this.platform.log.debug('callEnigmaWebAPI: %s', url.href);
 
-      fetch(endpoint, options)
-        .then(res => res.text())
-        .then(body => parseStringPromise(body, {
-          trim: true,
-          explicitArray: false,
-        }))
-        .then(res => resolve(res))
-        .catch(err => {
-          this.platform.log.error('Device: %s, API Call: %s, Error: ', this.hostname, endpoint, err.message);
-          reject(err);
-        });
-    });
+    const response = await fetch(url.href);
+    const body = await response.text();
+    const res = await parseStringPromise(body, { trim: true, explicitArray: false });
+    if (res) {
+      return res;
+    }
+    throw new Error('callEnigmaAPI failed: ' + path);
   }
 
   async getAllChannels(): Promise<Array<DreamboxChannel>> {
     const res = await this.callEnigmaWebAPI('getallservices');
-    if (res && res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+    if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
       let bouquet = res.e2servicelistrecursive.e2bouquet;
       if (Array.isArray(bouquet)) {
         bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
@@ -162,7 +137,7 @@ export class Dreambox {
 
   async getDeviceInfo(): Promise<DeviceInfo> {
     const res = await this.callEnigmaWebAPI('about');
-    if (res && res.e2abouts && res.e2abouts.e2about) {
+    if (res.e2abouts && res.e2abouts.e2about) {
       const deviceInfo = {
         modelName: res.e2abouts.e2about.e2model,
         serialNumber: res.e2abouts.e2about.e2lanmac,
@@ -175,9 +150,8 @@ export class Dreambox {
 
   async getPowerState(): Promise<boolean> {
     const res = await this.callEnigmaWebAPI('powerstate');
-    if (res && res.e2powerstate && res.e2powerstate.e2instandby) {
+    if (res.e2powerstate && res.e2powerstate.e2instandby) {
       this.powerState = res.e2powerstate.e2instandby === 'false';
-      this.log('getPower: %s', this.getPowerStateString());
       return this.powerState;
     }
     throw new Error('powerstate command failed: ' + JSON.stringify(res));
@@ -185,25 +159,23 @@ export class Dreambox {
 
   async setPowerState(state: boolean) {
     this.powerState = state;
-    this.log('setPower: %s', this.getPowerStateString());
-    await this.callEnigmaWebAPI('powerstate', {
-      newstate: (state ? '4' : '5'),
-    });
+    const params = new URLSearchParams();
+    params.append('newstate', state ? '4' : '5');
+    await this.callEnigmaWebAPI('powerstate', params);
   }
 
   async getChannel(): Promise<number> {
     if (this.powerState) {
       const res = await this.callEnigmaWebAPI('getcurrent');
-      if (res && res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
+      if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
         const reference = res.e2currentserviceinformation.e2service.e2servicereference;
-        this.channels.find((channel, index) => {
-          if (channel.reference === reference) {
-            this.log('getChannel: %s :- %s (%s)', index, channel.name, channel.reference);
-            this.channel = index;
-            return this.channel;
-          }
-        });
-        this.log('getChannel: not found %s.', reference);
+        const index = this.channels.findIndex(channel => channel.reference === reference);
+        if (index !== -1) {
+          this.channel = index;
+          this.platform.log.debug('getChannel: found: %s', this.getCurrentChannel());
+        } else {
+          this.platform.log.debug('getChannel: not found: %s', reference);
+        }
         return this.channel;
       }
       throw new Error('getcurrent command failed: ' + JSON.stringify(res));
@@ -213,29 +185,26 @@ export class Dreambox {
   }
 
   async setChannelByRef(ref: string) {
-    await this.callEnigmaWebAPI('zap', {
-      sRef: ref,
-    });
+    const params = new URLSearchParams();
+    params.append('sRef', ref);
+    await this.callEnigmaWebAPI('zap', params);
   }
 
   async setChannel(channel: number) {
     this.channel = channel;
-    this.log('setChannel: %s', channel);
     await this.setChannelByRef(this.channels[this.channel].reference);
   }
 
   async remoteKeyPress(command: number) {
-    this.log('remoteKeyPress: command: %s', command);
-    await this.callEnigmaWebAPI('remotecontrol', {
-      command: command,
-    });
+    const params = new URLSearchParams();
+    params.append('command', command.toString());
+    await this.callEnigmaWebAPI('remotecontrol', params);
   }
 
   async volumeSelectorPress(command: string) {
-    this.log('volumeSelectorPress: command: %s', command);
-    await this.callEnigmaWebAPI('vol', {
-      set: command,
-    });
+    const params = new URLSearchParams();
+    params.append('command', command);
+    await this.callEnigmaWebAPI('vol', params);
   }
 
 }
