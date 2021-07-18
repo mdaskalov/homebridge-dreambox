@@ -2,6 +2,7 @@ import { DreamboxPlatform } from './platform';
 import { parseStringPromise } from 'xml2js';
 import { URL, URLSearchParams } from 'url';
 import fetch from 'node-fetch';
+import { LogLevel } from 'homebridge';
 
 export type DreamboxChannel = {
   name: string,
@@ -56,7 +57,7 @@ export class Dreambox {
       platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
         const msg = JSON.parse(message);
         this.powerState = (msg.power === 'True');
-        this.platform.log.debug('MQTT Power: %s', this.powerState ? 'ON' : 'STANDBY');
+        this.log(LogLevel.DEBUG, 'MQTT Power: %s', this.powerState ? 'ON' : 'STANDBY');
         if (this.mqttPowerHandler) {
           this.mqttPowerHandler(this.powerState);
         }
@@ -66,7 +67,7 @@ export class Dreambox {
         const index = this.channels.findIndex(channel => channel.name === msg.name);
         if (index !== -1) {
           this.channel = index;
-          this.platform.log.debug('MQTT Channel: %s', this.getCurrentChannel());
+          this.log(LogLevel.DEBUG, 'MQTT Channel: %s', this.getCurrentChannel());
           if (this.mqttChannelHandler) {
             this.mqttChannelHandler(this.channel);
           }
@@ -74,6 +75,13 @@ export class Dreambox {
         }
       });
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  log(level: LogLevel, message: string, ...parameters: any[]): void {
+    this.platform.log.log(level, '%s :- ' + message, this.hostname,
+      ...parameters,
+    );
   }
 
   getCurrentChannel(): string {
@@ -100,52 +108,70 @@ export class Dreambox {
       url.search = searchParams.toString();
     }
 
-    this.platform.log.debug('callEnigmaWebAPI: %s', url.href);
+    this.log(LogLevel.DEBUG, 'callEnigmaWebAPI: %s', url.href);
 
-    const response = await fetch(url.href);
-    const body = await response.text();
-    const res = await parseStringPromise(body, { trim: true, explicitArray: false });
-    if (res) {
+    try {
+      const response = await fetch(url.href);
+      const body = await response.text();
+      const res = await parseStringPromise(body, { trim: true, explicitArray: false });
+      if (!res) {
+        throw new Error('callEnigmaWebAPI: unexpected response');
+      }
       return res;
+    } catch (err) {
+      throw new Error(err.message);
     }
-    throw new Error('callEnigmaAPI failed: ' + path);
   }
 
   async getAllChannels(): Promise<Array<DreamboxChannel>> {
-    const res = await this.callEnigmaWebAPI('getallservices');
-    if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
-      let bouquet = res.e2servicelistrecursive.e2bouquet;
-      if (Array.isArray(bouquet)) {
-        bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
+    try {
+      const res = await this.callEnigmaWebAPI('getallservices');
+      if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+        let bouquet = res.e2servicelistrecursive.e2bouquet;
+        if (Array.isArray(bouquet)) {
+          bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
+        }
+        if (bouquet) {
+          bouquet.e2servicelist.e2service.forEach(service => {
+            const channelReference = service.e2servicereference;
+            if (!channelReference.startsWith('1:64:')) { // Skip markers
+              this.channels.push({
+                name: service.e2servicename,
+                reference: channelReference,
+              });
+            }
+          });
+          this.log(LogLevel.INFO, 'configured %d channel(s)', this.channels.length);
+          return this.channels;
+        }
       }
-      if (bouquet) {
-        bouquet.e2servicelist.e2service.forEach(service => {
-          const channelReference = service.e2servicereference;
-          if (!channelReference.startsWith('1:64:')) { // Skip markers
-            this.channels.push({
-              name: service.e2servicename,
-              reference: channelReference,
-            });
-          }
-        });
-        this.platform.log.info('Device: %s, configured %d channel(s)', this.hostname, this.channels.length);
-        return this.channels;
-      }
+      this.log(LogLevel.ERROR, 'getAllChannels: unexpected answer');
+    } catch (err) {
+      this.log(LogLevel.ERROR, 'getAllChannels: ' + err.message);
     }
-    throw new Error('getallservices command failed: ' + JSON.stringify(res));
+    return [];
   }
 
   async getDeviceInfo(): Promise<DeviceInfo> {
-    const res = await this.callEnigmaWebAPI('about');
-    if (res.e2abouts && res.e2abouts.e2about) {
-      const deviceInfo = {
-        modelName: res.e2abouts.e2about.e2model,
-        serialNumber: res.e2abouts.e2about.e2lanmac,
-        firmwareRevision: res.e2abouts.e2about.e2enigmaversion,
-      };
-      return deviceInfo;
+    try {
+      const res = await this.callEnigmaWebAPI('about');
+      if (res.e2abouts && res.e2abouts.e2about) {
+        const deviceInfo = {
+          modelName: res.e2abouts.e2about.e2model,
+          serialNumber: res.e2abouts.e2about.e2lanmac,
+          firmwareRevision: res.e2abouts.e2about.e2enigmaversion,
+        };
+        return deviceInfo;
+      }
+      this.log(LogLevel.ERROR, 'getDeviceInfo: unexpected answer');
+    } catch (err) {
+      this.log(LogLevel.ERROR, 'getDeviceInfo: ' + err.message);
     }
-    throw new Error('about command failed: ' + JSON.stringify(res));
+    return {
+      modelName: 'dreambox',
+      serialNumber: 'unknown',
+      firmwareRevision: 'unknown',
+    };
   }
 
   async getPowerState(): Promise<boolean> {
@@ -154,7 +180,8 @@ export class Dreambox {
       this.powerState = res.e2powerstate.e2instandby === 'false';
       return this.powerState;
     }
-    throw new Error('powerstate command failed: ' + JSON.stringify(res));
+    this.log(LogLevel.ERROR, 'getPowerState: unexpected answer');
+    return this.powerState;
   }
 
   async setPowerState(state: boolean) {
@@ -172,16 +199,13 @@ export class Dreambox {
         const index = this.channels.findIndex(channel => channel.reference === reference);
         if (index !== -1) {
           this.channel = index;
-          this.platform.log.debug('getChannel: found: %s', this.getCurrentChannel());
+          this.log(LogLevel.DEBUG, 'getChannel: found: %s', this.getCurrentChannel());
         } else {
-          this.platform.log.debug('getChannel: not found: %s', reference);
+          this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
         }
-        return this.channel;
       }
-      throw new Error('getcurrent command failed: ' + JSON.stringify(res));
-    } else {
-      return this.channel;
     }
+    return this.channel;
   }
 
   async setChannelByRef(ref: string) {

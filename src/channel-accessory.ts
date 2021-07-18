@@ -1,4 +1,4 @@
-import { PlatformAccessory, Service } from 'homebridge';
+import { LogLevel, PlatformAccessory, Service } from 'homebridge';
 import { DreamboxPlatform } from './platform';
 import { Dreambox } from './dreambox';
 
@@ -17,9 +17,14 @@ export class ChannelAccessory {
     this.service.getCharacteristic(platform.Characteristic.On)
       .onGet(() => 0)
       .onSet(async value => {
-        this.platform.log.debug('ChannelAccessory: Set Channel: %s (%s)', this.name, this.reference);
+        this.dreambox.log(LogLevel.ERROR, 'ChannelAccessory: setChannel: %s (%s)', this.name, this.reference);
         this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(value);
-        await this.dreambox.setChannelByRef(this.reference);
+        try {
+          await this.dreambox.setChannelByRef(this.reference);
+        } catch (err) {
+          this.dreambox.log(LogLevel.ERROR, 'ChannelAccessory: setChannel failed: %s', err.message);
+          throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+        }
         setTimeout(() => {
           this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(0);
         }, 500);

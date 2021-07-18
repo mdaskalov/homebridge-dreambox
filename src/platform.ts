@@ -22,7 +22,7 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
       }
       this.setupDevices();
       this.cleanupCache();
-      this.log.debug('Finished initialization');
+      this.log.debug('Finished platform initialization');
     });
   }
 
