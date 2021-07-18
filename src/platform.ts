@@ -48,13 +48,13 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
               existingChannel.context.dreambox = dreambox;
               existingChannel.context.channel = channel;
               this.api.updatePlatformAccessories([existingChannel]);
-              new ChannelAccessory(this, existingChannel);
+              new ChannelAccessory(this, existingChannel, dreambox);
             } else {
               this.log.info('Adding new channel accessory: %s', channel.name);
               const accessory = new this.api.platformAccessory(channel.name, uuid);
               accessory.context.dreambox = dreambox;
               accessory.context.channel = channel;
-              new ChannelAccessory(this, accessory);
+              new ChannelAccessory(this, accessory, dreambox);
               this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
             }
           });

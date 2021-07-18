@@ -4,12 +4,10 @@ import { Dreambox } from './dreambox';
 
 export class ChannelAccessory {
   protected service: Service;
-  private dreambox: Dreambox;
   private name: string;
   private reference: string;
 
-  constructor(protected readonly platform: DreamboxPlatform, protected readonly accessory: PlatformAccessory) {
-    this.dreambox = accessory.context.dreambox;
+  constructor(protected readonly platform: DreamboxPlatform, protected readonly accessory: PlatformAccessory, private readonly dreambox: Dreambox) {
     this.name = accessory.context.channel.name;
     this.reference = accessory.context.channel.ref;
 
