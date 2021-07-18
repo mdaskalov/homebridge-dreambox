@@ -30,6 +30,7 @@
     "enigma2"
   ],
   "dependencies": {
+    "abort-controller": "^3.0.0",
     "mqtt": "^4.2.1",
     "node-fetch": "^2.6.1",
     "xml2js": "^0.4.23"

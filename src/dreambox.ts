@@ -1,6 +1,7 @@
 import { DreamboxPlatform } from './platform';
 import { parseStringPromise } from 'xml2js';
 import { URL, URLSearchParams } from 'url';
+import { AbortController } from 'abort-controller';
 import fetch from 'node-fetch';
 import { LogLevel } from 'homebridge';
 
@@ -110,8 +111,13 @@ export class Dreambox {
 
     this.log(LogLevel.DEBUG, 'callEnigmaWebAPI: %s', url.href);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 1500);
+
     try {
-      const response = await fetch(url.href);
+      const response = await fetch(url.href, { signal: controller.signal });
       const body = await response.text();
       const res = await parseStringPromise(body, { trim: true, explicitArray: false });
       if (!res) {
@@ -120,6 +126,8 @@ export class Dreambox {
       return res;
     } catch (err) {
       throw new Error(err.message);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
