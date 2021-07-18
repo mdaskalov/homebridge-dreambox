@@ -15,24 +15,15 @@ export class ChannelAccessory {
     this.service.setCharacteristic(platform.Characteristic.Name, accessory.context.channel.name);
 
     this.service.getCharacteristic(platform.Characteristic.On)
-      .on('get', this.getState.bind(this))
-      .on('set', this.setState.bind(this));
-  }
-
-  setState(value, callback) {
-    callback(null, 1);
-    this.platform.log.debug('Set Channel:', this.name, 'Reference:', this.reference);
-    this.dreambox.setChannelByRef(this.reference)
-      .then(() => {
-        this.service.updateCharacteristic(this.platform.Characteristic.On, 0);
-      })
-      .catch(err => {
-        this.service.updateCharacteristic(this.platform.Characteristic.On, 0);
-        this.platform.log.error(err);
+      .onGet(() => 0)
+      .onSet(async value => {
+        this.platform.log.debug('ChannelAccessory: Set Channel: %s (%s)', this.name, this.reference);
+        this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(value);
+        await this.dreambox.setChannelByRef(this.reference);
+        setTimeout(() => {
+          this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(0);
+        }, 500);
       });
   }
 
-  getState(callback) {
-    callback(null, 0);
-  }
 }
