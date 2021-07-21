@@ -29,20 +29,40 @@ export class DreamboxAccessory {
 
     this.tvService = this.tvAccessory.addService(this.platform.Service.Television);
     this.prepareServices();
+
+    this.dreambox.deviceInfoHandler = deviceInfo => {
+      this.tvAccessory
+        .getService(this.platform.Service.AccessoryInformation)!
+        .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Dream Multimedia')
+        .setCharacteristic(this.platform.Characteristic.Model, deviceInfo.modelName)
+        .setCharacteristic(this.platform.Characteristic.SerialNumber, deviceInfo.serialNumber)
+        .setCharacteristic(this.platform.Characteristic.FirmwareRevision, deviceInfo.firmwareRevision);
+    };
+
+    this.dreambox.deviceChannelsHandler = channels => {
+      let channelCount = 0;
+      channels.forEach(ch => {
+        const channelName = String(channelCount + 1).padStart(2, '0') + '. ' + ch.name;
+        const channelReference = ch.reference;
+        if (channelCount < 97) { // Max 97 channels can be used
+          this.createInputSource(channelReference, channelName, channelCount);
+          channelCount++;
+        }
+      });
+      this.dreambox.log(LogLevel.DEBUG, 'prepared %s channel(s).', channelCount);
+    };
+
+    this.dreambox.deviceStateHandler = state => {
+      this.tvService.getCharacteristic(this.platform.Characteristic.Active).updateValue(state.power);
+      this.tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier).updateValue(state.channel);
+    };
   }
 
   async prepareServices() {
     this.prepareTvService();
     this.prepereTvSpeakerService();
-    const channels = await this.prepareTvInputServices();
-    this.dreambox.log(LogLevel.DEBUG, 'prepared %s channel(s).', channels);
-    const deviceInfo = await this.dreambox.getDeviceInfo();
-    this.tvAccessory
-      .getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Dream Multimedia')
-      .setCharacteristic(this.platform.Characteristic.Model, deviceInfo.modelName)
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, deviceInfo.serialNumber)
-      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, deviceInfo.firmwareRevision);
+    await this.prepareTvInputServices();
+    await this.dreambox.getDeviceInfo();
     this.dreambox.log(LogLevel.DEBUG, 'publishExternalAccessories: %s', this.dreambox.name);
     this.platform.api.publishExternalAccessories(PLUGIN_NAME, [this.tvAccessory]);
   }
@@ -60,13 +80,7 @@ export class DreamboxAccessory {
     this.tvService.getCharacteristic(this.platform.Characteristic.RemoteKey)
       .onSet(this.remoteKeyPress.bind(this));
     this.tvService.getCharacteristic(this.platform.Characteristic.PowerModeSelection)
-      .onSet(value => this.dreambox.powerState = value as boolean);
-    this.dreambox.mqttPowerHandler = power => {
-      this.tvService.getCharacteristic(this.platform.Characteristic.Active).updateValue(power);
-    };
-    this.dreambox.mqttChannelHandler = channel => {
-      this.tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier).updateValue(channel);
-    };
+      .onSet(value => this.dreambox.state.power = value as boolean);
   }
 
   prepereTvSpeakerService() {
@@ -78,31 +92,21 @@ export class DreamboxAccessory {
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.VolumeSelector)
       .onSet(this.volumeSelectorPress.bind(this));
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.Volume)
-      .onGet(() => this.dreambox.volumeState)
-      .onSet(value => this.dreambox.volumeState = value as number);
+      .onGet(() => this.dreambox.state.volume)
+      .onSet(value => this.dreambox.state.volume = value as number);
     tvSpeakerService.getCharacteristic(this.platform.Characteristic.Mute)
-      .onGet(() => this.dreambox.muteState)
-      .onSet(value => this.dreambox.muteState = value as boolean);
+      .onGet(() => this.dreambox.state.mute)
+      .onSet(value => this.dreambox.state.mute = value as boolean);
   }
 
   async prepareTvInputServices() {
     this.dreambox.log(LogLevel.DEBUG, 'prepareTvInputServices');
-    let channelCount = 0;
     try {
-      const channels = await this.dreambox.getAllChannels();
-      channels.forEach(ch => {
-        const channelName = String(channelCount + 1).padStart(2, '0') + '. ' + ch.name;
-        const channelReference = ch.reference;
-        if (channelCount < 97) { // Max 97 channels can be used
-          this.createInputSource(channelReference, channelName, channelCount);
-          channelCount++;
-        }
-      });
+      await this.dreambox.getAllChannels();
     } catch (err) {
       this.dreambox.log(LogLevel.ERROR, '%s', err.message);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
-    return channelCount;
   }
 
   createInputSource(reference: string, name: string, number: number, sourceType = this.platform.Characteristic.InputSourceType.HDMI, deviceType = this.platform.Characteristic.InputDeviceType.TV) {

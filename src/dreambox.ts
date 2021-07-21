@@ -5,30 +5,41 @@ import { AbortController } from 'abort-controller';
 import fetch from 'node-fetch';
 import { LogLevel } from 'homebridge';
 
-export type DreamboxChannel = {
+type DreamboxChannel = {
   name: string,
   reference: string,
 }
 
-export type DeviceInfo = {
+type DeviceInfo = {
   modelName: string,
   serialNumber: string,
   firmwareRevision: string,
 }
 
-type PowerHandlerCallback =
-  (power: boolean) => void;
+type DeviceState = {
+  power: boolean;
+  mute: boolean;
+  volume: number;
+  channel: number;
+}
 
-type ChannelHandlerCallback =
-  (channel: number) => void;
+type DeviceStateHandler =
+  (state: DeviceState) => void;
+
+type DeviceInfoHandler =
+  (info: DeviceInfo) => void;
+
+type DeviceChannelsHandler =
+  (channels: Array<DreamboxChannel>) => void;
 
 export class Dreambox {
-  public powerState = false;
-  public muteState = false;
-  public volumeState = 0;
+  public state: DeviceState = { power: false, mute: false, volume: 0, channel: 0 };
+  public deviceInfo = { modelName: 'dreambox', serialNumber: 'unknown', firmwareRevision: 'unknown' }
+  public channels: Array<DreamboxChannel> = [];
 
-  private channel = 0;
-  private channels: Array<DreamboxChannel> = [];
+  public deviceInfoHandler?: DeviceInfoHandler;
+  public deviceChannelsHandler?: DeviceChannelsHandler;
+  public deviceStateHandler?: DeviceStateHandler;
 
   public name: string;
   public hostname: string;
@@ -38,9 +49,6 @@ export class Dreambox {
   private username: string;
   private password: string;
   private bouquet: string;
-
-  public mqttPowerHandler?: PowerHandlerCallback;
-  public mqttChannelHandler?: ChannelHandlerCallback;
 
   constructor(protected readonly platform: DreamboxPlatform, protected readonly device) {
     this.name = device['name'];
@@ -57,20 +65,20 @@ export class Dreambox {
     if (platform.mqttClient && topic) {
       platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
         const msg = JSON.parse(message);
-        this.powerState = (msg.power === 'True');
-        this.log(LogLevel.DEBUG, 'MQTT Power: %s', this.powerState ? 'ON' : 'STANDBY');
-        if (this.mqttPowerHandler) {
-          this.mqttPowerHandler(this.powerState);
+        this.state.power = (msg.power === 'True');
+        this.log(LogLevel.DEBUG, 'MQTT Power: %s', this.state.power ? 'ON' : 'STANDBY');
+        if (this.deviceStateHandler) {
+          this.deviceStateHandler(this.state);
         }
       });
       platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
         const msg = JSON.parse(message);
         const index = this.channels.findIndex(channel => channel.name === msg.name);
         if (index !== -1) {
-          this.channel = index;
-          this.log(LogLevel.DEBUG, 'MQTT Channel: %s', this.getCurrentChannel());
-          if (this.mqttChannelHandler) {
-            this.mqttChannelHandler(this.channel);
+          this.state.channel = index;
+          this.log(LogLevel.DEBUG, 'MQTT Channel: %s', this.getCurrentChannelDescription());
+          if (this.deviceStateHandler) {
+            this.deviceStateHandler(this.state);
           }
           return true;
         }
@@ -85,13 +93,13 @@ export class Dreambox {
     );
   }
 
-  getCurrentChannel(): string {
-    if (typeof this.channels[this.channel] === 'undefined') {
-      return 'no channel with index: ' + this.channel;
+  getCurrentChannelDescription(): string {
+    if (typeof this.channels[this.state.channel] === 'undefined') {
+      return 'no channel with index: ' + this.state.channel;
     } else {
-      const name = this.channels[this.channel].name;
-      const reference = this.channels[this.channel].reference;
-      return this.channel + ' :- ' + name + ' (' + reference + ')';
+      const name = this.channels[this.state.channel].name;
+      const reference = this.channels[this.state.channel].reference;
+      return this.state.channel + ' :- ' + name + ' (' + reference + ')';
     }
   }
 
@@ -154,81 +162,84 @@ export class Dreambox {
             }
           });
           this.log(LogLevel.INFO, 'configured %d channel(s)', this.channels.length);
-          return this.channels;
+          if (this.deviceChannelsHandler) {
+            this.deviceChannelsHandler(this.channels);
+          }
         }
+      } else {
+        this.log(LogLevel.ERROR, 'getAllChannels: unexpected answer');
       }
-      this.log(LogLevel.ERROR, 'getAllChannels: unexpected answer');
     } catch (err) {
       this.log(LogLevel.ERROR, 'getAllChannels: ' + err.message);
     }
-    return [];
+    return this.channels;
   }
 
   async getDeviceInfo(): Promise<DeviceInfo> {
     try {
       const res = await this.callEnigmaWebAPI('about');
       if (res.e2abouts && res.e2abouts.e2about) {
-        const deviceInfo = {
-          modelName: res.e2abouts.e2about.e2model,
-          serialNumber: res.e2abouts.e2about.e2lanmac,
-          firmwareRevision: res.e2abouts.e2about.e2enigmaversion,
-        };
-        return deviceInfo;
+        this.deviceInfo.modelName = res.e2abouts.e2about.e2model;
+        this.deviceInfo.serialNumber = res.e2abouts.e2about.e2lanmac;
+        this.deviceInfo.firmwareRevision = res.e2abouts.e2about.e2enigmaversion;
+        if (this.deviceInfoHandler) {
+          this.deviceInfoHandler(this.deviceInfo);
+        }
+      } else {
+        this.log(LogLevel.ERROR, 'getDeviceInfo: unexpected answer');
       }
-      this.log(LogLevel.ERROR, 'getDeviceInfo: unexpected answer');
     } catch (err) {
       this.log(LogLevel.ERROR, 'getDeviceInfo: ' + err.message);
     }
-    return {
-      modelName: 'dreambox',
-      serialNumber: 'unknown',
-      firmwareRevision: 'unknown',
-    };
+    return this.deviceInfo;
   }
 
   async getPowerState(): Promise<boolean> {
     const res = await this.callEnigmaWebAPI('powerstate');
     if (res.e2powerstate && res.e2powerstate.e2instandby) {
-      this.powerState = res.e2powerstate.e2instandby === 'false';
-      return this.powerState;
+      this.state.power = res.e2powerstate.e2instandby === 'false';
+    } else {
+      this.log(LogLevel.ERROR, 'getPowerState: unexpected answer');
+
     }
-    this.log(LogLevel.ERROR, 'getPowerState: unexpected answer');
-    return this.powerState;
+    return this.state.power;
   }
 
   async setPowerState(state: boolean) {
-    this.powerState = state;
+    this.state.power = state;
     const params = new URLSearchParams();
     params.append('newstate', state ? '4' : '5');
     await this.callEnigmaWebAPI('powerstate', params);
   }
 
   async getChannel(): Promise<number> {
-    if (this.powerState) {
+    if (this.state.power) {
       const res = await this.callEnigmaWebAPI('getcurrent');
       if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
         const reference = res.e2currentserviceinformation.e2service.e2servicereference;
         const index = this.channels.findIndex(channel => channel.reference === reference);
         if (index !== -1) {
-          this.channel = index;
-          this.log(LogLevel.DEBUG, 'getChannel: found: %s', this.getCurrentChannel());
+          this.state.channel = index;
+          this.log(LogLevel.DEBUG, 'getChannel: found: %s', this.getCurrentChannelDescription());
         } else {
           this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
         }
+      } else {
+        this.log(LogLevel.ERROR, 'getChannel: unexpected answer');
       }
     }
-    return this.channel;
+    return this.state.channel;
+  }
+
+  async setChannel(channel: number) {
+    this.state.channel = channel;
+    await this.setChannelByRef(this.channels[this.state.channel].reference);
   }
 
   async setChannelByRef(ref: string) {
     const params = new URLSearchParams();
     params.append('sRef', ref);
     await this.callEnigmaWebAPI('zap', params);
-  }
-
-  async setChannel(channel: number) {
-    this.channel = channel;
-    await this.setChannelByRef(this.channels[this.channel].reference);
   }
 
   async remoteKeyPress(command: number) {
