@@ -125,7 +125,11 @@ export class Dreambox {
       }
       return res;
     } catch (err) {
-      throw new Error(err.message);
+      if (err.name === 'AbortError') {
+        throw new Error('callEnigmaWebAPI: Timeout');
+      } else {
+        throw new Error(err.message);
+      }
     } finally {
       clearTimeout(timeout);
     }
