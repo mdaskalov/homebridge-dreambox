@@ -17,7 +17,7 @@ export class ChannelAccessory {
     this.service.getCharacteristic(platform.Characteristic.On)
       .onGet(() => 0)
       .onSet(async value => {
-        this.dreambox.log(LogLevel.ERROR, 'ChannelAccessory: setChannel: %s (%s)', this.name, this.reference);
+        this.dreambox.log(LogLevel.DEBUG, 'ChannelAccessory: setChannel: %s (%s)', this.name, this.reference);
         this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(value);
         try {
           await this.dreambox.setChannelByRef(this.reference);
