@@ -49,6 +49,7 @@ export class Dreambox {
   private username: string;
   private password: string;
   private bouquet: string;
+  private static retryTimeout = 30000;
 
   constructor(protected readonly platform: DreamboxPlatform, protected readonly device) {
     this.name = device['name'];
@@ -144,9 +145,11 @@ export class Dreambox {
   }
 
   async getAllChannels(): Promise<Array<DreamboxChannel>> {
+    let updated = false;
     try {
       const res = await this.callEnigmaWebAPI('getallservices');
       if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
+        updated = true;
         let bouquet = res.e2servicelistrecursive.e2bouquet;
         if (Array.isArray(bouquet)) {
           bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
@@ -167,29 +170,39 @@ export class Dreambox {
           }
         }
       } else {
-        this.log(LogLevel.ERROR, 'getAllChannels: unexpected answer');
+        this.log(LogLevel.DEBUG, 'getAllChannels: unexpected answer');
       }
     } catch (err) {
-      this.log(LogLevel.ERROR, 'getAllChannels: ' + err.message);
+      this.log(LogLevel.DEBUG, 'getAllChannels: %s', err.message);
+    }
+    if (!updated) {
+      this.log(LogLevel.DEBUG, 'getAllChannels: Failed. Will try later.');
+      setTimeout(this.getAllChannels.bind(this), Dreambox.retryTimeout);
     }
     return this.channels;
   }
 
   async getDeviceInfo(): Promise<DeviceInfo> {
+    let updated = false;
     try {
       const res = await this.callEnigmaWebAPI('about');
       if (res.e2abouts && res.e2abouts.e2about) {
         this.deviceInfo.modelName = res.e2abouts.e2about.e2model;
         this.deviceInfo.serialNumber = res.e2abouts.e2about.e2lanmac;
         this.deviceInfo.firmwareRevision = res.e2abouts.e2about.e2enigmaversion;
+        updated = true;
         if (this.deviceInfoHandler) {
           this.deviceInfoHandler(this.deviceInfo);
         }
       } else {
-        this.log(LogLevel.ERROR, 'getDeviceInfo: unexpected answer');
+        this.log(LogLevel.DEBUG, 'getDeviceInfo: unexpected answer');
       }
     } catch (err) {
-      this.log(LogLevel.ERROR, 'getDeviceInfo: ' + err.message);
+      this.log(LogLevel.DEBUG, 'getDeviceInfo: %s', err.message);
+    }
+    if (!updated) {
+      this.log(LogLevel.DEBUG, 'getDeviceInfo: Failed. Will try later.');
+      setTimeout(this.getDeviceInfo.bind(this), Dreambox.retryTimeout);
     }
     return this.deviceInfo;
   }
