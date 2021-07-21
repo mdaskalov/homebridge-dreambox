@@ -49,6 +49,8 @@ export class Dreambox {
   private username: string;
   private password: string;
   private bouquet: string;
+  private updateInterval: number;
+
   private static retryTimeout = 30000;
 
   constructor(protected readonly platform: DreamboxPlatform, protected readonly device) {
@@ -60,6 +62,7 @@ export class Dreambox {
     this.username = device['username'];
     this.password = device['password'];
     this.bouquet = device['bouquet'] || 'Favourites (TV)';
+    this.updateInterval = device['updateInterval'] || 0;
 
     // Setup MQTT subscriptions
     const topic = device['mqttTopic'];
@@ -84,6 +87,19 @@ export class Dreambox {
           return true;
         }
       });
+    }
+    if (this.updateInterval && this.updateInterval > 0) {
+      setInterval(async () => {
+        try {
+          await this.getPowerState();
+          await this.getChannel();
+          if (this.deviceStateHandler) {
+            this.deviceStateHandler(this.state);
+          }
+        } catch (err) {
+          this.log(LogLevel.DEBUG, 'Update: %s', err.message);
+        }
+      }, this.updateInterval * 1000);
     }
   }
 
@@ -118,24 +134,22 @@ export class Dreambox {
       url.search = searchParams.toString();
     }
 
-    this.log(LogLevel.DEBUG, 'callEnigmaWebAPI: %s', url.href);
-
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
-    }, 1500);
+    }, 2000);
 
     try {
       const response = await fetch(url.href, { signal: controller.signal });
       const body = await response.text();
       const res = await parseStringPromise(body, { trim: true, explicitArray: false });
       if (!res) {
-        throw new Error('callEnigmaWebAPI: unexpected response');
+        throw new Error('callEnigmaWebAPI: ' + url.href + ' :- unexpected response');
       }
       return res;
     } catch (err) {
       if (err.name === 'AbortError') {
-        throw new Error('callEnigmaWebAPI: Timeout');
+        throw new Error('callEnigmaWebAPI: ' + url.href + ' :- Timeout');
       } else {
         throw new Error(err.message);
       }
@@ -212,8 +226,7 @@ export class Dreambox {
     if (res.e2powerstate && res.e2powerstate.e2instandby) {
       this.state.power = res.e2powerstate.e2instandby === 'false';
     } else {
-      this.log(LogLevel.ERROR, 'getPowerState: unexpected answer');
-
+      this.log(LogLevel.DEBUG, 'getPowerState: unexpected answer');
     }
     return this.state.power;
   }
@@ -238,7 +251,7 @@ export class Dreambox {
           this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
         }
       } else {
-        this.log(LogLevel.ERROR, 'getChannel: unexpected answer');
+        this.log(LogLevel.DEBUG, 'getChannel: unexpected answer');
       }
     }
     return this.state.channel;
