@@ -28,7 +28,6 @@ export class DreamboxAccessory {
     }
 
     this.tvService = this.tvAccessory.addService(this.platform.Service.Television);
-    this.prepareServices();
 
     this.dreambox.deviceInfoHandler = deviceInfo => {
       this.tvAccessory
@@ -56,6 +55,8 @@ export class DreamboxAccessory {
       this.tvService.getCharacteristic(this.platform.Characteristic.Active).updateValue(state.power);
       this.tvService.getCharacteristic(this.platform.Characteristic.ActiveIdentifier).updateValue(state.channel);
     };
+
+    this.prepareServices();
   }
 
   async prepareServices() {
