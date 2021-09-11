@@ -105,7 +105,7 @@ export class DreamboxAccessory {
     try {
       await this.dreambox.getAllChannels();
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, '%s', err.message);
+      this.dreambox.logError('prepareTvInputServices', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -132,7 +132,7 @@ export class DreamboxAccessory {
     try {
       return await this.dreambox.getPowerState();
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'getPowerState: %s', err.message);
+      this.dreambox.logError('getPowerState', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -141,7 +141,7 @@ export class DreamboxAccessory {
     try {
       await this.dreambox.setPowerState(value as boolean);
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'setPowerState: %s', err.message);
+      this.dreambox.logError('setPowerState', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -150,7 +150,7 @@ export class DreamboxAccessory {
     try {
       return await this.dreambox.getChannel();
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'getChannel: %s', err.message);
+      this.dreambox.logError('getChannel', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -159,7 +159,7 @@ export class DreamboxAccessory {
     try {
       await this.dreambox.setChannel(value as number);
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'setChannel: %s', err.message);
+      this.dreambox.logError('setChannel', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -184,7 +184,7 @@ export class DreamboxAccessory {
     try {
       await this.dreambox.remoteKeyPress(command);
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'remoteKeyPress: %s', err.message);
+      this.dreambox.logError('remoteKeyPress', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }
@@ -198,7 +198,7 @@ export class DreamboxAccessory {
     try {
       await this.dreambox.volumeSelectorPress(command);
     } catch (err) {
-      this.dreambox.log(LogLevel.ERROR, 'volumeSelectorPress: %s', err.message);
+      this.dreambox.logError('volumeSelectorPress', err);
       throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     }
   }

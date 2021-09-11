@@ -110,6 +110,12 @@ export class Dreambox {
     );
   }
 
+  logError(method: string, err: unknown) {
+    if (err instanceof Error) {
+      this.log(LogLevel.ERROR, method + ': %s', err.message);
+    }
+  }
+
   getCurrentChannelDescription(): string {
     if (typeof this.channels[this.state.channel] === 'undefined') {
       return 'no channel with index: ' + this.state.channel;
