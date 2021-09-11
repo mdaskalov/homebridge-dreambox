@@ -17,12 +17,12 @@ export class ChannelAccessory {
     this.service.getCharacteristic(platform.Characteristic.On)
       .onGet(() => 0)
       .onSet(async value => {
-        this.dreambox.log(LogLevel.ERROR, 'ChannelAccessory: setChannel: %s (%s)', this.name, this.reference);
+        this.dreambox.log(LogLevel.DEBUG, 'ChannelAccessory: setChannel: %s (%s)', this.name, this.reference);
         this.service.getCharacteristic(this.platform.Characteristic.On).updateValue(value);
         try {
           await this.dreambox.setChannelByRef(this.reference);
         } catch (err) {
-          this.dreambox.log(LogLevel.ERROR, 'ChannelAccessory: setChannel failed: %s', err.message);
+          this.dreambox.logError('ChannelAccessory: setChannel', err);
           throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
         }
         setTimeout(() => {

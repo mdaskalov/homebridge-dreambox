@@ -34,6 +34,8 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
                     "ref": "1:0:19:283E:3FB:1:C00000:0:0:0:"
                 }
             ],
+            "updateInterval": 0,
+            "offWhenUnreachable": false
             "mqttTopic": "dreambox"
         }
     ],
@@ -58,12 +60,17 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 `bouquet` (optional) - By default the bouquet named `Favourites (TV)` will be imported. Configure the name shown in the dreambox GUI to import another bouquet. The number of imported channels is limited to 97 as homebridge cannot handle more. You can create custom bouquet to be used for homekit.
 
 `channels` (optional) - Channels to be added as separate buttons
-    
+
 `name` - Unique channel name
 
 `ref` - Channel reference as in the bouquet file
 
+`updateInterval` - (optional) Interval in miliseconds to poll the dreambox channel and power state. Set to 0 (default) to disable.
+
+`offWhenUnreachable` - (optional) Assume that the device is turned off when not reachable.
+
 `mqttTopic`(optional) - MQTT device topic used to synchronise the power state and current channel with your device. Topics used: `<mqttTopic>/state/power` and `<mqttTopic>/state/channel`. Example accepted messages:
+
 ```
 dreambox/state/power
 {"powerstate": "On", "power": "True"}
