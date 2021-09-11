@@ -157,8 +157,12 @@ export class Dreambox {
 
     try {
       const response = await fetch(url.href, { signal: controller.signal });
-      const body = await response.text();
-      res = await parseStringPromise(body, { trim: true, explicitArray: false });
+      if (response.status === 200) {
+        const body = await response.text();
+        res = await parseStringPromise(body, { trim: true, explicitArray: false });
+      } else {
+        this.log(LogLevel.ERROR, 'callEnigmaWebAPI: http status: %s - check webinterface settings', response.status);
+      }
     } catch (err) {
       const message = (err instanceof Error && err.name === 'AbortError') ? url.href + ' :- Timeout' : this.strError(err);
       const pref = 'callEnigmaWebAPI: ' + (this.offWhenUnreachable ? 'off (unreachable): ' : '');
