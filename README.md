@@ -35,6 +35,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
                 }
             ],
             "updateInterval": 0,
+            "offWhenUnreachable": false
             "mqttTopic": "dreambox"
         }
     ],
@@ -65,6 +66,8 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 `ref` - Channel reference as in the bouquet file
 
 `updateInterval` - (optional) Interval in miliseconds to poll the dreambox channel and power state. Set to 0 (default) to disable.
+
+`offWhenUnreachable` - (optional) Assume that the device is turned off when not reachable.
 
 `mqttTopic`(optional) - MQTT device topic used to synchronise the power state and current channel with your device. Topics used: `<mqttTopic>/state/power` and `<mqttTopic>/state/channel`. Example accepted messages:
 
