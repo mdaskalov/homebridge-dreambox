@@ -70,6 +70,11 @@
               "minimum": 0,
               "maximum": 60
             },
+            "offWhenUnreachable": {
+              "title": "Assume device is turned off when unreachable",
+              "type": "boolean",
+              "default": false
+            },
             "mqttTopic": {
               "title": "MQTT Topic",
               "type": "string"
@@ -159,6 +164,8 @@
         "key": "devices[].mqttTopic"
       }, {
         "key": "devices[].updateInterval"
+      }, {
+        "key": "devices[].offWhenUnreachable"
       }]
     },
     {
