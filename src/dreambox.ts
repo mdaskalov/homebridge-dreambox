@@ -97,10 +97,17 @@ export class Dreambox {
             this.deviceStateHandler(this.state);
           }
         } catch (err) {
-          this.log(LogLevel.DEBUG, 'Update: %s', err.message);
+          this.log(LogLevel.DEBUG, 'Update: %s', this.strError(err));
         }
       }, this.updateInterval * 1000);
     }
+  }
+
+  strError(err: unknown): string {
+    if (err instanceof Error) {
+      return err.message;
+    }
+    return err as string;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,7 +119,7 @@ export class Dreambox {
 
   logError(method: string, err: unknown) {
     if (err instanceof Error) {
-      this.log(LogLevel.ERROR, method + ': %s', err.message);
+      this.log(LogLevel.ERROR, method + ': %s', this.strError(err));
     }
   }
 
@@ -193,7 +200,7 @@ export class Dreambox {
         this.log(LogLevel.DEBUG, 'getAllChannels: unexpected answer');
       }
     } catch (err) {
-      this.log(LogLevel.DEBUG, 'getAllChannels: %s', err.message);
+      this.log(LogLevel.DEBUG, 'getAllChannels: %s', this.strError(err));
     }
     if (!updated) {
       this.log(LogLevel.DEBUG, 'getAllChannels: Failed. Will try later.');
@@ -218,7 +225,7 @@ export class Dreambox {
         this.log(LogLevel.DEBUG, 'getDeviceInfo: unexpected answer');
       }
     } catch (err) {
-      this.log(LogLevel.DEBUG, 'getDeviceInfo: %s', err.message);
+      this.log(LogLevel.DEBUG, 'getDeviceInfo: %s', this.strError(err));
     }
     if (!updated) {
       this.log(LogLevel.DEBUG, 'getDeviceInfo: Failed. Will try later.');
