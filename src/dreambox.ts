@@ -50,6 +50,7 @@ export class Dreambox {
   private password: string;
   private bouquet: string;
   private updateInterval: number;
+  private offWhenUnreachable: boolean;
 
   private static retryTimeout = 30000;
 
@@ -63,6 +64,7 @@ export class Dreambox {
     this.password = device['password'];
     this.bouquet = device['bouquet'] || 'Favourites (TV)';
     this.updateInterval = device['updateInterval'] || 0;
+    this.offWhenUnreachable = device['offWhenUnreachable'] || false;
 
     // Setup MQTT subscriptions
     const topic = device['mqttTopic'];
@@ -135,6 +137,7 @@ export class Dreambox {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async callEnigmaWebAPI(path: string, searchParams: URLSearchParams | undefined = undefined): Promise<any> {
+    let res = {};
     const url = new URL('/web/' + path, 'http://' + this.hostname);
     if (this.username && this.password) {
       url.username = this.username;
@@ -155,20 +158,20 @@ export class Dreambox {
     try {
       const response = await fetch(url.href, { signal: controller.signal });
       const body = await response.text();
-      const res = await parseStringPromise(body, { trim: true, explicitArray: false });
-      if (!res) {
-        throw new Error('callEnigmaWebAPI: ' + url.href + ' :- unexpected response');
-      }
-      return res;
+      res = await parseStringPromise(body, { trim: true, explicitArray: false });
     } catch (err) {
-      if (err.name === 'AbortError') {
-        throw new Error('callEnigmaWebAPI: ' + url.href + ' :- Timeout');
+      const message = (err instanceof Error && err.name === 'AbortError') ? url.href + ' :- Timeout' : this.strError(err);
+      const pref = 'callEnigmaWebAPI: ' + (this.offWhenUnreachable ? 'off (unreachable): ' : '');
+      if (this.offWhenUnreachable) {
+        this.state.power = false;
+        this.log(LogLevel.DEBUG, '%s%s', pref, message);
       } else {
-        throw new Error(err.message);
+        throw new Error(pref + message);
       }
     } finally {
       clearTimeout(timeout);
     }
+    return res;
   }
 
   async getAllChannels(): Promise<Array<DreamboxChannel>> {
@@ -238,7 +241,7 @@ export class Dreambox {
     const res = await this.callEnigmaWebAPI('powerstate');
     if (res.e2powerstate && res.e2powerstate.e2instandby) {
       this.state.power = res.e2powerstate.e2instandby === 'false';
-    } else {
+    } else if (!this.offWhenUnreachable) {
       this.log(LogLevel.DEBUG, 'getPowerState: unexpected answer');
     }
     return this.state.power;
@@ -263,7 +266,7 @@ export class Dreambox {
         } else {
           this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
         }
-      } else {
+      } else if (!this.offWhenUnreachable) {
         this.log(LogLevel.DEBUG, 'getChannel: unexpected answer');
       }
     }
