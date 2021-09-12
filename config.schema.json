@@ -124,7 +124,7 @@
       "nodescription": true,
       "notitle": true,
       "key": "devices",
-      "title": "{{ 'Device ' + $index}}",
+      "title": "{{ value.name || 'device' }}",
       "type": "tabarray",
       "items": [{
         "key": "devices[].name"
