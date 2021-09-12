@@ -102,20 +102,8 @@ If configured a MQTT broker can be used to synchronize the device status with Ho
 
 # References
 
-[homebridge-lib](https://github.com/ebaauw/homebridge-lib)
-
-[homebridge-ws](https://github.com/ebaauw/homebridge-ws)
-
-[HomeKit-TV](https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit-TV.ts)
-
 [Enigma2 WebInterface API Documentation](https://dream.reichholf.net/e2web/)
 
-[Enigma2 WebInterface Wiki](https://dream.reichholf.net/wiki/Enigma2:WebInterface)
-
 [OpenWebif API Documentation](https://github.com/E2OpenPlugins/e2openplugin-OpenWebif/wiki/OpenWebif-API-documentation)
-
-[homebridge-sony-television](https://github.com/arnif/homebridge-sony-television)
-
-[homebridge-denon-tv](https://github.com/grzegorz914/homebridge-denon-tv)
 
 [homebridge-openwebif-tv](https://github.com/grzegorz914/homebridge-openwebif-tv)
