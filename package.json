@@ -25,7 +25,7 @@
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build",
-    "test": "npm run build && node dist/index.js && echo \"No syntax errors! (node $(node -v))\""
+    "test": "npm run build && echo \"No syntax errors! (node $(node -v))\""
   },
   "keywords": [
     "homebridge-plugin",
@@ -48,7 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
     "eslint": "^7.21.0",
-    "homebridge": "^1.3.1",
+    "homebridge": "^1.3.9",
     "nodemon": "^2.0.7",
     "rimraf": "^3.0.2",
     "ts-node": "^9.1.1",
