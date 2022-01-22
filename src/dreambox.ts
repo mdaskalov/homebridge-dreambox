@@ -2,8 +2,17 @@ import { DreamboxPlatform } from './platform';
 import { parseStringPromise } from 'xml2js';
 import { URL, URLSearchParams } from 'url';
 import { AbortController } from 'abort-controller';
-import fetch from 'node-fetch';
+import { RequestInfo, RequestInit } from 'node-fetch';
 import { LogLevel } from 'homebridge';
+
+// from: https://stackoverflow.com/questions/70142391/importing-node-fetch-in-node-project-with-typescript
+// eslint-disable-next-line no-new-func
+const importDynamic = new Function('modulePath', 'return import(modulePath)');
+
+const fetch = async (url:RequestInfo, init?:RequestInit) => {
+  const module = await importDynamic('node-fetch');
+  return module.default(url, init);
+};
 
 type DreamboxChannel = {
   name: string,
