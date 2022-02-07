@@ -148,10 +148,6 @@ export class Dreambox {
   async callEnigmaWebAPI(path: string, searchParams: URLSearchParams | undefined = undefined): Promise<any> {
     let res = {};
     const url = new URL('/web/' + path, 'http://' + this.hostname);
-    if (this.username && this.password) {
-      url.username = this.username;
-      url.password = this.password;
-    }
     if (url.port !== undefined) {
       url.port = this.port;
     }
@@ -164,8 +160,18 @@ export class Dreambox {
       controller.abort();
     }, 2000);
 
+    const requestInit: RequestInit = {
+      signal: controller.signal,
+    };
+
+    if (this.username && this.password) {
+      requestInit.headers = {
+        'Authorization': 'Basic ' + Buffer.from(this.username + ':' + this.password).toString('base64'),
+      };
+    }
+
     try {
-      const response = await fetch(url.href, { signal: controller.signal });
+      const response = await fetch(url.href, requestInit);
       if (response.status === 200) {
         const body = await response.text();
         res = await parseStringPromise(body, { trim: true, explicitArray: false });
