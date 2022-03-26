@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge Dreambox",
   "name": "homebridge-dreambox",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Control your Dreambox as HomeKit Appliance",
   "license": "MIT",
   "repository": {
