@@ -311,7 +311,7 @@ export class Dreambox {
 
   async volumeSelectorPress(command: string) {
     const params = new URLSearchParams();
-    params.append('command', command);
+    params.append('set', command);
     await this.callEnigmaWebAPI('vol', params);
   }
 
