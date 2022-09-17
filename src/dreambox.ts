@@ -1,18 +1,8 @@
 import { DreamboxPlatform } from './platform';
 import { parseStringPromise } from 'xml2js';
 import { URL, URLSearchParams } from 'url';
-import { AbortController } from 'abort-controller';
-import { RequestInfo, RequestInit } from 'node-fetch';
+import fetch from 'cross-fetch';
 import { LogLevel } from 'homebridge';
-
-// from: https://stackoverflow.com/questions/70142391/importing-node-fetch-in-node-project-with-typescript
-// eslint-disable-next-line no-new-func
-const importDynamic = new Function('modulePath', 'return import(modulePath)');
-
-const fetch = async (url:RequestInfo, init?:RequestInit) => {
-  const module = await importDynamic('node-fetch');
-  return module.default(url, init);
-};
 
 type DreamboxChannel = {
   name: string,
@@ -43,7 +33,7 @@ type DeviceChannelsHandler =
 
 export class Dreambox {
   public state: DeviceState = { power: false, mute: false, volume: 0, channel: 0 };
-  public deviceInfo = { modelName: 'dreambox', serialNumber: 'unknown', firmwareRevision: 'unknown' }
+  public deviceInfo = { modelName: 'dreambox', serialNumber: 'unknown', firmwareRevision: 'unknown' };
   public channels: Array<DreamboxChannel> = [];
 
   public deviceInfoHandler?: DeviceInfoHandler;
@@ -311,7 +301,7 @@ export class Dreambox {
 
   async volumeSelectorPress(command: string) {
     const params = new URLSearchParams();
-    params.append('command', command);
+    params.append('set', command);
     await this.callEnigmaWebAPI('vol', params);
   }
 

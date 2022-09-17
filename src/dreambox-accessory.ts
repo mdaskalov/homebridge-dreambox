@@ -81,7 +81,9 @@ export class DreamboxAccessory {
     this.tvService.getCharacteristic(this.platform.Characteristic.RemoteKey)
       .onSet(this.remoteKeyPress.bind(this));
     this.tvService.getCharacteristic(this.platform.Characteristic.PowerModeSelection)
-      .onSet(value => this.dreambox.state.power = value as boolean);
+      .onSet(async () => {
+        await this.dreambox.remoteKeyPress(139); // show menu
+      });
   }
 
   prepereTvSpeakerService() {
