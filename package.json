@@ -12,8 +12,8 @@
     "url": "https://github.com/mdaskalov/homebridge-dreambox/issues"
   },
   "engines": {
-    "node": ">=14.18.3",
-    "homebridge": ">=1.3.5"
+    "node": "^20.19.2 || ^v22.16.0",
+    "homebridge": "^1.6.0 || ^2.0.0-beta.0"
   },
   "funding": {
     "type": "paypal",
