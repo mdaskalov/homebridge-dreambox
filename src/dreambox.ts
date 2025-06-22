@@ -1,13 +1,9 @@
 import { DreamboxPlatform } from './platform';
-import { parseStringPromise } from 'xml2js';
+import { DreamboxDevice } from './dreambox-accessory';
+import { DreamboxDeviceChannel } from './channel-accessory';
+import { XMLParser } from 'fast-xml-parser';
 import { URL, URLSearchParams } from 'url';
-import fetch from 'cross-fetch';
 import { LogLevel } from 'homebridge';
-
-type DreamboxChannel = {
-  name: string,
-  reference: string,
-}
 
 type DeviceInfo = {
   modelName: string,
@@ -25,50 +21,88 @@ type DeviceState = {
 type DeviceStateHandler =
   (state: DeviceState) => void;
 
-type DeviceInfoHandler =
-  (info: DeviceInfo) => void;
+type E2About = {
+  e2abouts: {
+    e2about: {
+      e2model: string,
+      e2lanmac: string,
+      e2enigmaversion: string,
+    }
+  }
+}
 
-type DeviceChannelsHandler =
-  (channels: Array<DreamboxChannel>) => void;
+type E2Service = {
+  e2servicereference: string,
+  e2servicename: string
+}
+
+type E2Bouquet = {
+  e2servicereference: string,
+  e2servicename: string,
+  e2servicelist: {
+    e2service: Array<E2Service>
+  }
+}
+
+type E2ServiceList = {
+  e2servicelistrecursive: {
+    e2bouquet: Array<E2Bouquet>
+  }
+}
+
+type E2PowerState = {
+  e2powerstate: {
+    e2instandby: string
+  }
+}
+
+type E2CurrentServiceInfo = {
+  e2currentserviceinformation: {
+    e2service: {
+      e2servicereference: string
+    }
+  }
+}
 
 export class Dreambox {
-  public state: DeviceState = { power: false, mute: false, volume: 0, channel: 0 };
-  public deviceInfo = { modelName: 'dreambox', serialNumber: 'unknown', firmwareRevision: 'unknown' };
-  public channels: Array<DreamboxChannel> = [];
+  public readonly name: string;
+  public readonly hostname: string;
+  public readonly bouquet: string;
 
-  public deviceInfoHandler?: DeviceInfoHandler;
-  public deviceChannelsHandler?: DeviceChannelsHandler;
+  public readonly state: DeviceState = { power: false, mute: false, volume: 0, channel: 0 };
+  public readonly deviceInfo: DeviceInfo = { modelName: 'Dreambox', serialNumber: 'Unknown', firmwareRevision: 'Unknown' };
+  public readonly channels: Array<DreamboxDeviceChannel> = [];
+
   public deviceStateHandler?: DeviceStateHandler;
 
-  public name: string;
-  public hostname: string;
-  public uuid: string;
-
-  private port: string;
-  private username: string;
-  private password: string;
-  private bouquet: string;
+  private port?: number;
+  private username?: string;
+  private password?: string;
   private updateInterval: number;
   private offWhenUnreachable: boolean;
 
-  private static retryTimeout = 30000;
+  private static abortTimeout = 3000;
+  private static maxRetries = 3;
+  private static retryDelay = 500;
 
-  constructor(protected readonly platform: DreamboxPlatform, protected readonly device) {
-    this.name = device['name'];
-    this.hostname = device['hostname'];
-    this.uuid = platform.api.hap.uuid.generate(this.hostname + ':' + this.name);
+  private xmlParser: XMLParser;
 
-    this.port = device['port'];
-    this.username = device['username'];
-    this.password = device['password'];
-    this.bouquet = device['bouquet'] || 'Favourites (TV)';
-    this.updateInterval = device['updateInterval'] || 0;
-    this.offWhenUnreachable = device['offWhenUnreachable'] || false;
+  constructor(protected readonly platform: DreamboxPlatform, protected readonly device: DreamboxDevice) {
+    this.name = device.name || 'Dreambox';
+    this.hostname = device.hostname;
+    this.bouquet = device.bouquet || 'Favourites (TV)';
+
+    this.port = device.port;
+    this.username = device.username;
+    this.password = device.password;
+    this.updateInterval = device.updateInterval || 0;
+    this.offWhenUnreachable = device.offWhenUnreachable || false;
+
+    this.xmlParser = new XMLParser({ ignoreAttributes: false, trimValues: true });
 
     // Setup MQTT subscriptions
-    const topic = device['mqttTopic'];
-    if (platform.mqttClient && topic) {
-      platform.mqttClient.mqttSubscribe(topic + '/state/power', (topic, message) => {
+    if (platform.mqttClient && device.mqttTopic) {
+      platform.mqttClient.mqttSubscribe(device.mqttTopic + '/state/power', (topic, message) => {
         const msg = JSON.parse(message);
         this.state.power = (msg.power === 'True');
         this.log(LogLevel.DEBUG, 'MQTT Power: %s', this.state.power ? 'ON' : 'STANDBY');
@@ -76,7 +110,7 @@ export class Dreambox {
           this.deviceStateHandler(this.state);
         }
       });
-      platform.mqttClient.mqttSubscribe(topic + '/state/channel', (topic, message) => {
+      platform.mqttClient.mqttSubscribe(device.mqttTopic + '/state/channel', (topic, message) => {
         const msg = JSON.parse(message);
         const index = this.channels.findIndex(channel => channel.name === msg.name);
         if (index !== -1) {
@@ -104,15 +138,11 @@ export class Dreambox {
     }
   }
 
-  strError(err: unknown): string {
-    if (err instanceof Error) {
-      return err.message;
-    }
-    return err as string;
+  private strError(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  log(level: LogLevel, message: string, ...parameters: any[]): void {
+  log(level: LogLevel, message: string, ...parameters: unknown[]): void {
     this.platform.log.log(level, '%s :- ' + message, this.hostname,
       ...parameters,
     );
@@ -120,7 +150,7 @@ export class Dreambox {
 
   logError(method: string, err: unknown) {
     if (err instanceof Error) {
-      this.log(LogLevel.ERROR, method + ': %s', this.strError(err));
+      this.log(LogLevel.ERROR, '%s: %s', method, this.strError(err));
     }
   }
 
@@ -129,126 +159,118 @@ export class Dreambox {
       return 'no channel with index: ' + this.state.channel;
     } else {
       const name = this.channels[this.state.channel].name;
-      const reference = this.channels[this.state.channel].reference;
+      const reference = this.channels[this.state.channel].ref;
       return this.state.channel + ' :- ' + name + ' (' + reference + ')';
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async callEnigmaWebAPI(path: string, searchParams: URLSearchParams | undefined = undefined): Promise<any> {
-    let res = {};
-    const url = new URL('/web/' + path, 'http://' + this.hostname);
-    if (url.port !== undefined) {
-      url.port = this.port;
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async fetchWithTimeoutRetry(url: string): Promise<Response> {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < Dreambox.maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), Dreambox.abortTimeout);
+      const init: RequestInit = {
+        signal: controller.signal,
+        ...(this.username && this.password && {
+          headers: {
+            'Authorization': 'Basic ' +
+              Buffer.from(`${this.username}:${this.password}`).toString('base64'),
+          },
+        }),
+      };
+
+      try {
+        const response = await fetch(url, init);
+        return response;
+      } catch (err) {
+        lastErr = err;
+
+        const isTimeout = err instanceof Error && err.name === 'AbortError';
+
+        if (isTimeout) {
+          this.log(LogLevel.DEBUG, `Timeout fetching ${url}, retrying (${attempt + 1}/${Dreambox.maxRetries})...`);
+          if (attempt < Dreambox.maxRetries - 1) {
+            await this.delay(Dreambox.retryDelay);
+          }
+        } else {
+          throw err;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
     }
-    if (searchParams !== undefined) {
+    throw lastErr;
+  }
+
+  async callEnigmaWebAPI(path: string, searchParams?: URLSearchParams): Promise<unknown> {
+    const url = new URL(`/web/${path}`, `http://${this.hostname}`);
+    if (this.port) {
+      url.port = this.port.toString();
+    }
+    if (searchParams) {
       url.search = searchParams.toString();
     }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 2000);
-
-    const requestInit: RequestInit = {
-      signal: controller.signal,
-    };
-
-    if (this.username && this.password) {
-      requestInit.headers = {
-        'Authorization': 'Basic ' + Buffer.from(this.username + ':' + this.password).toString('base64'),
-      };
-    }
-
     try {
-      const response = await fetch(url.href, requestInit);
+      const response = await this.fetchWithTimeoutRetry(url.href);
       if (response.status === 200) {
         const body = await response.text();
-        res = await parseStringPromise(body, { trim: true, explicitArray: false });
+        return this.xmlParser.parse(body);
       } else {
         this.log(LogLevel.ERROR, 'callEnigmaWebAPI: http status: %s - check webinterface settings', response.status);
+        return {};
       }
     } catch (err) {
-      const message = (err instanceof Error && err.name === 'AbortError') ? url.href + ' :- Timeout' : this.strError(err);
+      const message = (err instanceof Error && err.name === 'AbortError')
+        ? `${url.href} :- Timeout`
+        : this.strError(err);
       const pref = 'callEnigmaWebAPI: ' + (this.offWhenUnreachable ? 'off (unreachable): ' : '');
+
       if (this.offWhenUnreachable) {
         this.state.power = false;
         this.log(LogLevel.DEBUG, '%s%s', pref, message);
+        return {};
       } else {
         throw new Error(pref + message);
       }
-    } finally {
-      clearTimeout(timeout);
     }
-    return res;
   }
 
-  async getAllChannels(): Promise<Array<DreamboxChannel>> {
-    let updated = false;
-    try {
-      const res = await this.callEnigmaWebAPI('getallservices');
-      if (res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
-        updated = true;
-        let bouquet = res.e2servicelistrecursive.e2bouquet;
-        if (Array.isArray(bouquet)) {
-          bouquet = bouquet.find(b => b.e2servicename === this.bouquet);
-        }
-        if (bouquet) {
-          bouquet.e2servicelist.e2service.forEach(service => {
-            const channelReference = service.e2servicereference;
-            if (!channelReference.startsWith('1:64:')) { // Skip markers
-              this.channels.push({
-                name: service.e2servicename,
-                reference: channelReference,
-              });
-            }
-          });
-          this.log(LogLevel.INFO, 'configured %d channel(s)', this.channels.length);
-          if (this.deviceChannelsHandler) {
-            this.deviceChannelsHandler(this.channels);
-          }
-        }
-      } else {
-        this.log(LogLevel.DEBUG, 'getAllChannels: unexpected answer');
-      }
-    } catch (err) {
-      this.log(LogLevel.DEBUG, 'getAllChannels: %s', this.strError(err));
+  async readDeviceInfo() {
+    const res = await this.callEnigmaWebAPI('about') as E2About;
+    if (res) {
+      const { e2model, e2lanmac, e2enigmaversion } = res.e2abouts.e2about;
+      this.deviceInfo.modelName = e2model;
+      this.deviceInfo.serialNumber = e2lanmac;
+      this.deviceInfo.firmwareRevision = e2enigmaversion;
+      return;
     }
-    if (!updated) {
-      this.log(LogLevel.DEBUG, 'getAllChannels: Failed. Will try later.');
-      setTimeout(this.getAllChannels.bind(this), Dreambox.retryTimeout);
-    }
-    return this.channels;
+    throw Error('getDeviceInfo: Unexpected answer.');
   }
 
-  async getDeviceInfo(): Promise<DeviceInfo> {
-    let updated = false;
-    try {
-      const res = await this.callEnigmaWebAPI('about');
-      if (res.e2abouts && res.e2abouts.e2about) {
-        this.deviceInfo.modelName = res.e2abouts.e2about.e2model;
-        this.deviceInfo.serialNumber = res.e2abouts.e2about.e2lanmac;
-        this.deviceInfo.firmwareRevision = res.e2abouts.e2about.e2enigmaversion;
-        updated = true;
-        if (this.deviceInfoHandler) {
-          this.deviceInfoHandler(this.deviceInfo);
-        }
-      } else {
-        this.log(LogLevel.DEBUG, 'getDeviceInfo: unexpected answer');
+  async readChannels() {
+    const res = await this.callEnigmaWebAPI('getallservices') as E2ServiceList;
+    if (res) {
+      const bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet);
+      if (bouquet) {
+        const services = bouquet.e2servicelist.e2service.filter(s => !s.e2servicereference.startsWith('1:64:'));
+        const channels = services.map(s => ({ name: s.e2servicename, ref: s.e2servicereference }));
+        this.channels.splice(0);
+        this.channels.push(...channels);
+        this.log(LogLevel.DEBUG, 'getAllChannels: got %d channel(s)', this.channels.length);
+        return;
       }
-    } catch (err) {
-      this.log(LogLevel.DEBUG, 'getDeviceInfo: %s', this.strError(err));
+      throw Error(`readChannels: Bouquet "${this.bouquet}" not found.`);
     }
-    if (!updated) {
-      this.log(LogLevel.DEBUG, 'getDeviceInfo: Failed. Will try later.');
-      setTimeout(this.getDeviceInfo.bind(this), Dreambox.retryTimeout);
-    }
-    return this.deviceInfo;
+    throw Error('readChannels: Unexpected answer.');
   }
 
   async getPowerState(): Promise<boolean> {
-    const res = await this.callEnigmaWebAPI('powerstate');
-    if (res.e2powerstate && res.e2powerstate.e2instandby) {
+    const res = await this.callEnigmaWebAPI('powerstate') as E2PowerState;
+    if (res) {
       this.state.power = res.e2powerstate.e2instandby === 'false';
     } else if (!this.offWhenUnreachable) {
       this.log(LogLevel.DEBUG, 'getPowerState: unexpected answer');
@@ -265,13 +287,13 @@ export class Dreambox {
 
   async getChannel(): Promise<number> {
     if (this.state.power) {
-      const res = await this.callEnigmaWebAPI('getcurrent');
-      if (res.e2currentserviceinformation && res.e2currentserviceinformation.e2service) {
+      const res = await this.callEnigmaWebAPI('getcurrent') as E2CurrentServiceInfo;
+      if (res) {
         const reference = res.e2currentserviceinformation.e2service.e2servicereference;
-        const index = this.channels.findIndex(channel => channel.reference === reference);
+        const index = this.channels.findIndex(channel => channel.ref === reference);
         if (index !== -1) {
           this.state.channel = index;
-          this.log(LogLevel.DEBUG, 'getChannel: found: %s', this.getCurrentChannelDescription());
+          this.log(LogLevel.DEBUG, 'getChannel: found at %s', this.getCurrentChannelDescription());
         } else {
           this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
         }
@@ -284,7 +306,7 @@ export class Dreambox {
 
   async setChannel(channel: number) {
     this.state.channel = channel;
-    await this.setChannelByRef(this.channels[this.state.channel].reference);
+    await this.setChannelByRef(this.channels[this.state.channel].ref);
   }
 
   async setChannelByRef(ref: string) {

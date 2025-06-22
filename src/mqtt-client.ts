@@ -1,5 +1,5 @@
 import { Logger, PlatformConfig } from 'homebridge';
-import { MqttClient, connect } from 'mqtt';
+import { IClientOptions, MqttClient, connect } from 'mqtt';
 
 type HandlerCallback =
   (topic: string, msg: string) => void;
@@ -14,8 +14,9 @@ export class MQTTClient {
   private messageHandlers: Array<Handler> = [];
 
   constructor(private log: Logger, private config: PlatformConfig) {
-    const options = {
-      clientId: 'homebridge-dreambox_' + Math.random().toString(16).substr(2, 8),
+
+    const options: IClientOptions = {
+      clientId: 'homebridge-zbbridge_' + Math.random().toString(16).slice(2, 10),
       protocolId: 'MQTT',
       protocolVersion: 4,
       clean: true,
@@ -48,6 +49,17 @@ export class MQTTClient {
       if (handlersCount === 1) {
         this.mqttClient.subscribe(topic); // subscribe once
       }
+    }
+  }
+
+  shutdown() {
+    this.log.debug('MQTT: Shutdown. Remove all handlers');
+    for (const handler of this.messageHandlers) {
+      this.mqttClient.unsubscribe(handler.topic);
+      this.log.debug('MQTT: Unubscribed topic: %s', handler.topic);
+    }
+    if (this.mqttClient) {
+      this.mqttClient.end();
     }
   }
 }

@@ -85,19 +85,32 @@
       "deviceType": {
         "title": "Device type to publish",
         "type": "string",
-        "oneOf": [{
-          "title": "TV Set-Top Box (STB)",
-          "enum": ["TV_SET_TOP_BOX"]
-        }, {
-          "title": "TV Streaming Stick",
-          "enum": ["TV_STREAMING_STICK"]
-        }, {
-          "title": "Audio Receiver",
-          "enum": ["AUDIO_RECEIVER"]
-        }, {
-          "title": "TV",
-          "enum": ["TELEVISION"]
-        }]
+        "oneOf": [
+          {
+            "title": "TV Set-Top Box (STB)",
+            "enum": [
+              "TV_SET_TOP_BOX"
+            ]
+          },
+          {
+            "title": "TV Streaming Stick",
+            "enum": [
+              "TV_STREAMING_STICK"
+            ]
+          },
+          {
+            "title": "Audio Receiver",
+            "enum": [
+              "AUDIO_RECEIVER"
+            ]
+          },
+          {
+            "title": "TV",
+            "enum": [
+              "TELEVISION"
+            ]
+          }
+        ]
       },
       "mqtt": {
         "title": "Use MQTT to update the dreambox state",
@@ -120,64 +133,90 @@
       }
     }
   },
-  "layout": [{
+  "layout": [
+    {
       "nodescription": true,
       "notitle": true,
       "key": "devices",
       "title": "{{ value.name || 'device' }}",
       "type": "tabarray",
-      "items": [{
-        "key": "devices[].name"
-      }, {
-        "key": "devices[].hostname"
-      }, {
-        "key": "devices[].port"
-      }, {
-        "key": "devices[].username"
-      }, {
-        "key": "devices[].password"
-      }, {
-        "key": "devices[].bouquet"
-      }, {
-        "key": "devices[].channels",
-        "buttonText": "Add Channel",
-        "items": [{
-          "type": "div",
-          "displayFlex": false,
-          "items": [{
-            "type": "flex",
-            "flex-flow": "row wrap",
-            "items": [{
-                "type": "flex",
-                "flex-flow": "column",
-                "items": ["devices[].channels[].name"]
-              },
-              {
-                "type": "flex",
-                "flex-flow": "column",
-                "items": ["devices[].channels[].ref"]
-              }
-            ]
-          }]
-        }]
-      }, {
-        "key": "devices[].mqttTopic"
-      }, {
-        "key": "devices[].updateInterval"
-      }, {
-        "key": "devices[].offWhenUnreachable"
-      }]
+      "items": [
+        {
+          "key": "devices[].name"
+        },
+        {
+          "key": "devices[].hostname"
+        },
+        {
+          "key": "devices[].port"
+        },
+        {
+          "key": "devices[].username"
+        },
+        {
+          "key": "devices[].password"
+        },
+        {
+          "key": "devices[].bouquet"
+        },
+        {
+          "key": "devices[].channels",
+          "buttonText": "Add Channel",
+          "items": [
+            {
+              "type": "div",
+              "displayFlex": false,
+              "items": [
+                {
+                  "type": "flex",
+                  "flex-flow": "row wrap",
+                  "items": [
+                    {
+                      "type": "flex",
+                      "flex-flow": "column",
+                      "items": [
+                        "devices[].channels[].name"
+                      ]
+                    },
+                    {
+                      "type": "flex",
+                      "flex-flow": "column",
+                      "items": [
+                        "devices[].channels[].ref"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "devices[].mqttTopic"
+        },
+        {
+          "key": "devices[].updateInterval"
+        },
+        {
+          "key": "devices[].offWhenUnreachable"
+        }
+      ]
     },
     {
       "type": "fieldset",
       "title": "Advanced Settings",
       "expandable": true,
       "expanded": false,
-      "items": [{
+      "items": [
+        {
           "type": "help",
           "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
-        "deviceType", "mqtt", "mqttBroker", "mqttUsername", "mqttPassword"
+        "deviceType",
+        "mqtt",
+        "mqttBroker",
+        "mqttUsername",
+        "mqttPassword"
       ]
     }
   ]
