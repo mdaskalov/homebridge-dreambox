@@ -5,6 +5,13 @@
   "schema": {
     "type": "object",
     "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "placeholder": "Homebridge name for the Dreambox platform",
+        "required": true,
+        "default": "Dreambox"
+      },
       "devices": {
         "title": "Dreambox Devices",
         "type": "array",
@@ -212,6 +219,7 @@
           "type": "help",
           "helpvalue": "<em class='text-danger'>Configuration settings for advanced user.</em>"
         },
+        "name",
         "deviceType",
         "mqtt",
         "mqttBroker",
