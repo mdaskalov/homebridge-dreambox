@@ -12,7 +12,7 @@
     "url": "https://github.com/mdaskalov/homebridge-dreambox/issues"
   },
   "engines": {
-    "node": "^20.19.2 || ^v22.16.0 || v24.14.0",
+    "node": "^v22.16.0 || v24.14.0",
     "homebridge": "^1.11.3 || ^2.0.0"
   },
   "funding": {
