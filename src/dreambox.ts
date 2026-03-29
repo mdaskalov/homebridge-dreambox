@@ -90,9 +90,9 @@ export class Dreambox {
   private updateInterval: number;
   private offWhenUnreachable: boolean;
 
-  private static abortTimeout = 3000;
+  private static abortTimeout = 800;
   private static maxRetries = 3;
-  private static retryDelay = 500;
+  private static retryDelay = 300;
 
   private xmlParser: XMLParser;
 
@@ -197,16 +197,15 @@ export class Dreambox {
         return response;
       } catch (err) {
         lastErr = err;
-
         const isTimeout = err instanceof Error && err.name === 'AbortError';
-
         if (isTimeout) {
-          this.log(LogLevel.DEBUG, `Timeout fetching ${url}, retrying (${attempt + 1}/${Dreambox.maxRetries})...`);
-          if (attempt < Dreambox.maxRetries - 1) {
-            await this.delay(Dreambox.retryDelay);
-          }
-        } else {
-          throw err;
+          this.log(LogLevel.DEBUG, `Timeout fetching ${url} (attempt ${attempt + 1}/${Dreambox.maxRetries})`);
+          throw err; // ← don't retry timeouts, device is unreachable
+        }
+        // transient error — retry with delay
+        this.log(LogLevel.DEBUG, `Error fetching ${url}, retrying (${attempt + 1}/${Dreambox.maxRetries})...`);
+        if (attempt < Dreambox.maxRetries - 1) {
+          await this.delay(Dreambox.retryDelay);
         }
       } finally {
         clearTimeout(timeout);
