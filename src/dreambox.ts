@@ -249,7 +249,7 @@ export class Dreambox {
 
   async readDeviceInfo() {
     const res = await this.callEnigmaWebAPI('about') as E2About;
-    if (res) {
+    if (res && res.e2abouts && res.e2abouts.e2about) {
       const { e2model, e2lanmac, e2enigmaversion } = res.e2abouts.e2about;
       this.deviceInfo.modelName = e2model;
       this.deviceInfo.serialNumber = e2lanmac;
@@ -261,7 +261,7 @@ export class Dreambox {
 
   async readChannels() {
     const res = await this.callEnigmaWebAPI('getallservices') as E2ServiceList;
-    if (res) {
+    if (res && res.e2servicelistrecursive && res.e2servicelistrecursive.e2bouquet) {
       const bouquet = res.e2servicelistrecursive.e2bouquet.find(b => b.e2servicename === this.bouquet);
       if (bouquet) {
         const services = bouquet.e2servicelist.e2service.filter(s => !s.e2servicereference.startsWith('1:64:'));
@@ -281,12 +281,16 @@ export class Dreambox {
     if (set) {
       params.append('set', set);
     }
-    const res = await this.callEnigmaWebAPI('vol', params) as E2Volume;
-    if (res) {
-      this.state.volume = res.e2volume.e2current;
-      this.state.mute = res.e2volume.e2ismuted;
-    } else if (!this.offWhenUnreachable) {
-      this.log(LogLevel.DEBUG, 'getPowerState: unexpected answer');
+    try {
+      const res = await this.callEnigmaWebAPI('vol', params) as E2Volume;
+      if (res && res.e2volume) {
+        this.state.volume = res.e2volume.e2current;
+        this.state.mute = res.e2volume.e2ismuted;
+      }
+    } catch {
+      if (!this.offWhenUnreachable) {
+        this.log(LogLevel.DEBUG, 'getPowerState: unexpected answer');
+      }
     }
   }
 
@@ -295,27 +299,35 @@ export class Dreambox {
     if (newState) {
       params.append('newstate', newState);
     }
-    const res = await this.callEnigmaWebAPI('powerstate', params) as E2PowerState;
-    if (res) {
-      this.state.power = !res.e2powerstate.e2instandby;
-    } else if (!this.offWhenUnreachable) {
-      this.log(LogLevel.DEBUG, 'updatePowerState: unexpected answer');
+    try {
+      const res = await this.callEnigmaWebAPI('powerstate', params) as E2PowerState;
+      if (res) {
+        this.state.power = !res.e2powerstate.e2instandby;
+      }
+    } catch {
+      if (!this.offWhenUnreachable) {
+        this.log(LogLevel.DEBUG, 'updatePowerState: unexpected answer');
+      }
     }
   }
 
   async updateChannelState() {
     if (this.state.power) {
-      const res = await this.callEnigmaWebAPI('getcurrent') as E2CurrentServiceInfo;
-      if (res) {
-        const reference = res.e2currentserviceinformation.e2service.e2servicereference;
-        const index = this.channels.findIndex(channel => channel.ref === reference);
-        if (index !== -1) {
-          this.state.channel = index;
-        } else {
-          this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
+      try {
+        const res = await this.callEnigmaWebAPI('getcurrent') as E2CurrentServiceInfo;
+        if (res) {
+          const reference = res.e2currentserviceinformation.e2service.e2servicereference;
+          const index = this.channels.findIndex(channel => channel.ref === reference);
+          if (index !== -1) {
+            this.state.channel = index;
+          } else {
+            this.log(LogLevel.DEBUG, 'getChannel: not found: %s', reference);
+          }
         }
-      } else if (!this.offWhenUnreachable) {
-        this.log(LogLevel.DEBUG, 'getChannel: unexpected answer');
+      } catch {
+        if (!this.offWhenUnreachable) {
+          this.log(LogLevel.DEBUG, 'getChannel: unexpected answer');
+        }
       }
     }
   }
