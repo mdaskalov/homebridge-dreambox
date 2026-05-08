@@ -345,3 +345,11 @@ export class Dreambox {
   }
 
 }
+
+export function safeChannelName(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9 ']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+}

@@ -1,7 +1,7 @@
 import { Service, PlatformAccessory, CharacteristicValue, LogLevel } from 'homebridge';
 import { DreamboxPlatform } from './platform';
 import { DreamboxDeviceChannel } from './channel-accessory';
-import { Dreambox } from './dreambox';
+import { Dreambox, safeChannelName } from './dreambox';
 
 export type DreamboxDevice = {
   name: string,
@@ -114,11 +114,12 @@ export class DreamboxAccessory {
   }
 
   createInputSource(reference: string, name: string, number: number) {
-    this.dreambox.log(LogLevel.DEBUG, 'createInputSource :- %s', name);
-    const input = this.accessory.addService(this.platform.Service.InputSource, reference, name);
+    const safeName = safeChannelName(name);
+    this.dreambox.log(LogLevel.DEBUG, 'createInputSource :- %s - %s', reference, safeName);
+    const input = this.accessory.addService(this.platform.Service.InputSource, safeName, reference);
     input
       .setCharacteristic(this.platform.Characteristic.Identifier, number)
-      .setCharacteristic(this.platform.Characteristic.ConfiguredName, name)
+      .setCharacteristic(this.platform.Characteristic.ConfiguredName, safeName)
       .setCharacteristic(this.platform.Characteristic.IsConfigured, this.platform.Characteristic.IsConfigured.CONFIGURED)
       .setCharacteristic(this.platform.Characteristic.InputSourceType, this.platform.Characteristic.InputSourceType.OTHER)
       .setCharacteristic(this.platform.Characteristic.InputDeviceType, this.platform.Characteristic.InputDeviceType.TV)

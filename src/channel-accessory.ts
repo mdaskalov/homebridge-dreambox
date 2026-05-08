@@ -1,6 +1,6 @@
 import { LogLevel, PlatformAccessory, Service } from 'homebridge';
 import { DreamboxPlatform } from './platform';
-import { Dreambox } from './dreambox';
+import { Dreambox, safeChannelName } from './dreambox';
 
 export type DreamboxDeviceChannel = {
   name: string,
@@ -17,7 +17,7 @@ export class ChannelAccessory {
     protected readonly accessory: PlatformAccessory,
     private readonly dreambox: Dreambox) {
 
-    this.name = accessory.displayName;
+    this.name = safeChannelName(accessory.displayName);
     this.ref = accessory.context.ref;
 
     this.service = accessory.getService(platform.Service.Switch) || accessory.addService(platform.Service.Switch);
