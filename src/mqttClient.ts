@@ -1,5 +1,6 @@
-import { Logging, PlatformConfig } from 'homebridge';
-import { IClientOptions, MqttClient, connect } from 'mqtt';
+import type { Logging, PlatformConfig } from 'homebridge';
+import type { IClientOptions, MqttClient } from 'mqtt';
+import { connect } from 'mqtt';
 
 type HandlerCallback = (topic: string, msg: string) => void;
 
@@ -12,7 +13,10 @@ export class MQTTClient {
   private mqttClient: MqttClient;
   private messageHandlers: Array<Handler> = [];
 
-  constructor(private log: Logging, config: PlatformConfig) {
+  constructor(
+    private log: Logging,
+    config: PlatformConfig,
+  ) {
     const options: IClientOptions = {
       clientId: 'homebridge-dreambox_' + Math.random().toString(16).slice(2, 10),
       protocolId: 'MQTT',
