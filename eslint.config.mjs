@@ -13,6 +13,7 @@ export default tseslint.config(
     },
 
     rules: {
+      '@typescript-eslint/consistent-type-imports': 'warn',
       quotes: ['warn', 'single'],
       indent: ['warn', 2, { SwitchCase: 1 }],
       semi: ['warn', 'always'],
