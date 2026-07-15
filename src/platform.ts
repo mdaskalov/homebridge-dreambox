@@ -1,9 +1,10 @@
-import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
+import type { API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { DreamboxDevice, DreamboxAccessory } from './dreambox-accessory';
-import { DreamboxDeviceChannel, ChannelAccessory } from './channel-accessory';
+import type { DreamboxDevice, DreamboxDeviceChannel } from './dreamboxTypes';
+import { DreamboxAccessory } from './dreamboxAccessory';
+import { ChannelAccessory } from './channelAccessory';
 import { Dreambox } from './dreambox';
-import { MQTTClient } from './mqtt-client';
+import { MQTTClient } from './mqttClient';
 
 export class DreamboxPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
@@ -12,7 +13,7 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
   public readonly mqttClient?: MQTTClient;
 
   constructor(
-    public readonly log: Logger,
+    public readonly log: Logging,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
@@ -24,14 +25,8 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
 
     this.log.debug('Finished initializing %s platform...', this.config.name || 'Dreambox');
 
-    this.api.on('didFinishLaunching', async () => {
-      await this.setupDevices();
-    });
-
-    this.api.on('shutdown', () => {
-      this.mqttClient?.shutdown();
-    });
-
+    this.api.on('didFinishLaunching', async () => await this.setupDevices());
+    this.api.on('shutdown', () => this.mqttClient?.shutdown());
   }
 
   configureAccessory(accessory: PlatformAccessory) {
@@ -48,33 +43,28 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
   }
 
   setupDeviceChannels(device: DreamboxDevice, dreambox: Dreambox) {
-    const configuredUUIDs: string[] = [];
-    if (Array.isArray(device.channels)) {
-      for (const channel of device.channels) {
-        if ((<DreamboxDeviceChannel>channel).name && (<DreamboxDeviceChannel>channel).ref) {
-          const uuid = this.channelUUID(channel);
-          const existingAccessory = this.accessories.get(uuid);
-          this.log.info('%s channel accessory: %s (%s)',
-            existingAccessory ? 'Restoring' : 'Adding',
-            channel.name, channel.ref,
-          );
-          if (existingAccessory) {
-            existingAccessory.context.ref = channel.ref;
-            new ChannelAccessory(this, existingAccessory, dreambox);
-          } else {
-            const accessory = new this.api.platformAccessory(channel.name, uuid);
-            accessory.context.ref = channel.ref;
-            new ChannelAccessory(this, accessory, dreambox);
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-          }
-          configuredUUIDs.push(uuid);
+    const configuredUUIDs = new Set<string>();
+    for (const channel of device.channels ?? []) {
+      if (channel.name && channel.ref) {
+        const uuid = this.channelUUID(channel);
+        const existingAccessory = this.accessories.get(uuid);
+        this.log.info('%s channel accessory: %s (%s)', existingAccessory ? 'Restoring' : 'Adding', channel.name, channel.ref);
+        if (existingAccessory) {
+          existingAccessory.context.ref = channel.ref;
+          new ChannelAccessory(this, existingAccessory, dreambox);
         } else {
-          this.log.error('Ignored channel: %s', channel);
+          const accessory = new this.api.platformAccessory(channel.name, uuid);
+          accessory.context.ref = channel.ref;
+          new ChannelAccessory(this, accessory, dreambox);
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
+        configuredUUIDs.add(uuid);
+      } else {
+        this.log.error('Ignored channel: %s', channel);
       }
     }
     for (const [uuid, accessory] of this.accessories) {
-      if (!configuredUUIDs.includes(uuid)) {
+      if (!configuredUUIDs.has(uuid)) {
         this.log.info('Removing channel accessory: %s (%s)', accessory.displayName, accessory.context.ref);
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
@@ -82,28 +72,30 @@ export class DreamboxPlatform implements DynamicPlatformPlugin {
   }
 
   async setupDevices() {
-    if (Array.isArray(this.config.devices)) {
-      for (const device of this.config.devices) {
-        if ((<DreamboxDevice>device).name && (<DreamboxDevice>device).hostname) {
-          try {
-            const dreambox = new Dreambox(this, device);
-            await dreambox.readDeviceInfo();
-            await dreambox.readChannels();
-            const uuid = this.dreamboxUUID(dreambox);
-            const accessory = new this.api.platformAccessory(dreambox.name, uuid);
-            accessory.context.dreambox = dreambox;
-            new DreamboxAccessory(this, accessory, dreambox);
-            this.log.info('Adding dreambox accessory: %s (host: %s, bouquet: %s) with %d channel(s)',
-              dreambox.name, dreambox.hostname, dreambox.bouquet, dreambox.channels.length,
-            );
-            this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
-            this.setupDeviceChannels(device, dreambox);
-          } catch (err) {
-            this.log.error('Failed configuring device:', err);
-          }
-        }
+    for (const device of (this.config.devices ?? []) as Array<DreamboxDevice>) {
+      if (!device.name || !device.hostname) {
+        this.log.error('Ignored device without name or hostname: %s', JSON.stringify(device));
+        continue;
+      }
+      try {
+        const dreambox = new Dreambox(this, device);
+        await dreambox.readDeviceInfo();
+        await dreambox.readChannels();
+        const uuid = this.dreamboxUUID(dreambox);
+        const accessory = new this.api.platformAccessory(dreambox.name, uuid);
+        new DreamboxAccessory(this, accessory, dreambox);
+        this.log.info(
+          'Adding dreambox accessory: %s (host: %s, bouquet: %s) with %d channel(s)',
+          dreambox.name,
+          dreambox.hostname,
+          dreambox.bouquet,
+          dreambox.channels.length,
+        );
+        this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
+        this.setupDeviceChannels(device, dreambox);
+      } catch (err) {
+        this.log.error('Failed configuring device:', err);
       }
     }
   }
-
 }
