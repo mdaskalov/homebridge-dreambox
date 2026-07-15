@@ -1,4 +1,5 @@
 import tseslint from 'typescript-eslint';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
@@ -29,4 +30,5 @@ export default tseslint.config(
       'lines-between-class-members': ['warn', 'always', { exceptAfterSingleLine: true }],
     },
   },
+  eslintConfigPrettier,
 );
