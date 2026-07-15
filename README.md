@@ -65,7 +65,7 @@ Homebridge plugin to control your Dreambox as HomeKit TV-Appliance
 
 `ref` - Channel reference as in the bouquet file
 
-`updateInterval` - (optional) Interval in miliseconds to poll the dreambox channel and power state. Set to 0 (default) to disable.
+`updateInterval` - (optional) Interval in seconds (max. 60) to poll the dreambox channel and power state. Set to 0 (default) to disable.
 
 `offWhenUnreachable` - (optional) Assume that the device is turned off when not reachable.
 
@@ -89,6 +89,10 @@ dreambox/state/channel
 `mqttUsername` (optional) - Username to connect to the MQTT broker
 
 `mqttPassword` (optional) - Password to connect to the MQTT broker
+
+# Homebridge 2.x
+
+HAP must be enabled on the bridge running this platform. If your main bridge is Matter-only (`"bridge": { "hap": false }`), external accessories are silently skipped and the TV will not be published. In that case run the platform in a child bridge (HAP is enabled by default in child bridges):
 
 # Usage
 
