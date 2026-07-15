@@ -7,6 +7,7 @@ All notable changes will be documented in this file.
 - Reorganized sources
 - Fixed: first bouquet channel could not be selected as input
 - Fixed: connection errors were silently swallowed instead of logged
+- Fixed: missing channels on homebridge 2.0
 - Updated dependencies
 
 ## v3.0.2
