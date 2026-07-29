@@ -2,6 +2,9 @@
 
 All notable changes will be documented in this file.
 
+## v3.1.1
+- Updated dependencies
+
 ## v3.1.0
 - Added prettier
 - Reorganized sources
