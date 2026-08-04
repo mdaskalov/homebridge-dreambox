@@ -2,7 +2,8 @@
 
 All notable changes will be documented in this file.
 
-## v3.1.1
+## v3.1.1, v3.1.2
+- Fixed vulnerabilities
 - Updated dependencies
 
 ## v3.1.0
